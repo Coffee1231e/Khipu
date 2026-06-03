@@ -1,0 +1,459 @@
+// ============================================================
+//  KHIPU — Prisma Schema v2.0
+//  Base de datos: PostgreSQL (Supabase)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────
+//  ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum Rol {
+  administrador
+  almacen
+  coordinador
+  encargado
+  instructor
+  servicio
+}
+
+enum EstadoItem {
+  inactivo
+  activo
+  danado
+  en_mantenimiento
+  baja
+}
+
+enum TipoMovimiento {
+  entrada
+  asignacion
+  traslado
+  mantenimiento
+  devolucion
+  baja
+}
+
+enum EstadoSolicitud {
+  pendiente
+  aceptado
+  rechazado
+}
+
+enum TipoNotificacion {
+  traslado_solicitado
+  traslado_aceptado
+  traslado_rechazado
+  verificacion_enviada
+  item_danado_reportado
+  servicio_solicitado
+  item_en_mantenimiento
+  item_devuelto
+  item_baja
+  cuenta_creada
+  contrasena_cambiada
+  mantenimiento_completado
+}
+
+enum MetodoDos2FA {
+  totp
+  email
+}
+
+enum EstadoVerificacion {
+  presente
+  ausente
+  danado
+}
+
+// ─────────────────────────────────────────────────────────────
+//  NAVES
+// ─────────────────────────────────────────────────────────────
+
+model Nave {
+  id          String   @id @default(uuid())
+  nombre      String   @db.VarChar(100)
+  descripcion String?  @db.Text
+  activo      Boolean  @default(true)
+  creadoEn    DateTime @default(now()) @map("creado_en")
+
+  ambientes    Ambiente[]
+  usuariosNave UsuarioNave[]
+  items        Item[]
+
+  @@map("naves")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  AMBIENTES
+// ─────────────────────────────────────────────────────────────
+
+model Ambiente {
+  id          String   @id @default(uuid())
+  nombre      String   @db.VarChar(100)
+  descripcion String?  @db.Text
+  naveId      String   @map("nave_id")
+  activo      Boolean  @default(true)
+  creadoEn    DateTime @default(now()) @map("creado_en")
+
+  nave               Nave          @relation(fields: [naveId], references: [id], onDelete: Restrict)
+  fichas             Ficha[]
+  items              Item[]
+  usuariosAmbiente   UsuarioAmbiente[]
+
+  movimientosOrigen  Movimiento[]        @relation("AmbienteOrigen")
+  movimientosDestino Movimiento[]        @relation("AmbienteDestino")
+
+  solicitudesOrigen  SolicitudTraslado[] @relation("SolicitudOrigen")
+  solicitudesDestino SolicitudTraslado[] @relation("SolicitudDestino")
+
+  @@map("ambientes")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  FICHAS
+// ─────────────────────────────────────────────────────────────
+
+model Ficha {
+  id         String   @id @default(uuid())
+  numero     String   @unique @db.VarChar(20)
+  nombre     String   @db.VarChar(200)
+  ambienteId String   @map("ambiente_id")
+  activo     Boolean  @default(true)
+  creadoEn   DateTime @default(now()) @map("creado_en")
+
+  ambiente Ambiente  @relation(fields: [ambienteId], references: [id], onDelete: Restrict)
+  usuarios Usuario[]
+
+  @@map("fichas")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  USUARIOS
+// ─────────────────────────────────────────────────────────────
+
+model Usuario {
+  id            String   @id @default(uuid())
+  nombre        String   @db.VarChar(200)
+  email         String   @unique @db.VarChar(200)
+  passwordHash  String   @map("password_hash") @db.VarChar(255)
+  rol           Rol
+  fichaId       String?  @map("ficha_id")
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  ficha    Ficha? @relation(fields: [fichaId], references: [id])
+  naves    UsuarioNave[]
+  ambientes UsuarioAmbiente[]
+
+  dosFA UsuarioDosFA?
+
+  notificaciones Notificacion[]
+  logsRealizados AuditLog[]
+  movimientos    Movimiento[]
+  verificaciones VerificacionInventario[]
+
+  itemsCreados Item[] @relation("ItemCreador")
+
+  solicitudesCreadas   SolicitudTraslado[] @relation("SolicitudCreador")
+  solicitudesResueltas SolicitudTraslado[] @relation("SolicitudResolver")
+
+  // ← FIX: campo inverso requerido por SolicitudMantenimiento.solicitante
+  solicitudesMantenimiento SolicitudMantenimiento[] @relation("MantenimientoSolicitante")
+
+  @@map("usuarios")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  RELACIONES MANY-TO-MANY
+// ─────────────────────────────────────────────────────────────
+
+model UsuarioNave {
+  usuarioId  String   @map("usuario_id")
+  naveId     String   @map("nave_id")
+  asignadoEn DateTime @default(now()) @map("asignado_en")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  nave    Nave    @relation(fields: [naveId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, naveId])
+  @@map("usuario_naves")
+}
+
+model UsuarioAmbiente {
+  usuarioId  String   @map("usuario_id")
+  ambienteId String   @map("ambiente_id")
+  asignadoEn DateTime @default(now()) @map("asignado_en")
+
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  ambiente Ambiente @relation(fields: [ambienteId], references: [id], onDelete: Cascade)
+
+  @@id([usuarioId, ambienteId])
+  @@map("usuario_ambientes")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  2FA
+// ─────────────────────────────────────────────────────────────
+
+model UsuarioDosFA {
+  id         String       @id @default(uuid())
+  usuarioId  String       @unique @map("usuario_id")
+  metodo     MetodoDos2FA
+  secreto    String?      @db.VarChar(255)
+  activado   Boolean      @default(false)
+  creadoEn   DateTime     @default(now()) @map("creado_en")
+  activadoEn DateTime?    @map("activado_en")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@map("usuario_dos_fa")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  CATEGORÍAS
+// ─────────────────────────────────────────────────────────────
+
+model CategoriaItem {
+  id       Int     @id @default(autoincrement())
+  nombre   String  @unique @db.VarChar(100)
+  activo   Boolean @default(true)
+  creadoEn DateTime @default(now()) @map("creado_en")
+
+  items Item[]
+
+  @@map("categorias_item")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  ÍTEMS
+// ─────────────────────────────────────────────────────────────
+
+model Item {
+  id               Int        @id @default(autoincrement())
+  numeroInventario String     @unique @map("numero_inventario") @db.VarChar(50)
+  nombre           String     @db.VarChar(200)
+  descripcion      String?    @db.Text
+  categoriaId      Int        @map("categoria_id")
+  naveId           String?    @map("nave_id")
+  ambienteId       String?    @map("ambiente_id")
+  estado           EstadoItem @default(inactivo)
+  observaciones    String?    @db.Text
+  imagenUrl        String?    @map("imagen_url") @db.Text
+  activo           Boolean    @default(true)
+  creadoEn         DateTime   @default(now()) @map("creado_en")
+  actualizadoEn    DateTime   @updatedAt @map("actualizado_en")
+  asignadoEn       DateTime?  @map("asignado_en")
+  creadoPorId      String?    @map("creado_por_id")
+
+  categoria CategoriaItem @relation(fields: [categoriaId], references: [id])
+  nave      Nave?         @relation(fields: [naveId], references: [id])
+  ambiente  Ambiente?     @relation(fields: [ambienteId], references: [id])
+  creadoPor Usuario?      @relation("ItemCreador", fields: [creadoPorId], references: [id])
+
+  movimientos              Movimiento[]
+  logs                     AuditLog[]
+  solicitudesTraslado      SolicitudTraslado[]
+  detallesVerificacion     DetalleVerificacion[]
+  solicitudesMantenimiento SolicitudMantenimiento[]
+
+  @@index([ambienteId])
+  @@index([naveId])
+  @@index([estado])
+  @@index([categoriaId])
+  @@map("items")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  MOVIMIENTOS
+// ─────────────────────────────────────────────────────────────
+
+model Movimiento {
+  id                String         @id @default(uuid())
+  itemId            Int            @map("item_id")
+  usuarioId         String         @map("usuario_id")
+  tipo              TipoMovimiento
+  ambienteOrigenId  String?        @map("ambiente_origen_id")
+  ambienteDestinoId String?        @map("ambiente_destino_id")
+  observaciones     String?        @db.Text
+  fecha             DateTime       @default(now())
+
+  item            Item      @relation(fields: [itemId], references: [id])
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id])
+  ambienteOrigen  Ambiente? @relation("AmbienteOrigen", fields: [ambienteOrigenId], references: [id])
+  ambienteDestino Ambiente? @relation("AmbienteDestino", fields: [ambienteDestinoId], references: [id])
+
+  @@index([itemId])
+  @@index([usuarioId])
+  @@index([fecha(sort: Desc)])
+  @@map("movimientos")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  SOLICITUDES DE TRASLADO
+// ─────────────────────────────────────────────────────────────
+
+model SolicitudTraslado {
+  id                String          @id @default(uuid())
+  itemId            Int             @map("item_id")
+  solicitanteId     String          @map("solicitante_id")
+  resolvedorId      String?         @map("resolvedor_id")
+  ambienteOrigenId  String          @map("ambiente_origen_id")
+  ambienteDestinoId String          @map("ambiente_destino_id")
+  estado            EstadoSolicitud @default(pendiente)
+  observaciones     String?         @db.Text
+  motivoRechazo     String?         @map("motivo_rechazo") @db.Text
+  esInterNave       Boolean         @default(false) @map("es_inter_nave")
+  creadoEn          DateTime        @default(now()) @map("creado_en")
+  resolvedoEn       DateTime?       @map("resuelto_en")
+
+  item            Item      @relation(fields: [itemId], references: [id])
+  solicitante     Usuario   @relation("SolicitudCreador", fields: [solicitanteId], references: [id])
+  resolvedor      Usuario?  @relation("SolicitudResolver", fields: [resolvedorId], references: [id])
+  ambienteOrigen  Ambiente  @relation("SolicitudOrigen", fields: [ambienteOrigenId], references: [id])
+  ambienteDestino Ambiente  @relation("SolicitudDestino", fields: [ambienteDestinoId], references: [id])
+
+  @@index([estado])
+  @@index([solicitanteId])
+  @@map("solicitudes_traslado")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  SOLICITUDES DE MANTENIMIENTO
+// ─────────────────────────────────────────────────────────────
+
+model SolicitudMantenimiento {
+  id               String          @id @default(uuid())
+  itemId           Int             @map("item_id")
+  solicitanteId    String          @map("solicitante_id")
+  // servicioId se almacena como string plano (sin FK) para flexibilidad
+  servicioId       String?         @map("servicio_id")
+  estado           EstadoSolicitud @default(pendiente)
+  descripcionFalla String          @map("descripcion_falla") @db.Text
+  observaciones    String?         @db.Text
+  creadoEn         DateTime        @default(now()) @map("creado_en")
+  aceptadoEn       DateTime?       @map("aceptado_en")
+  completadoEn     DateTime?       @map("completado_en")
+  resultadoFinal   String?         @map("resultado_final") @db.VarChar(20)
+
+  item        Item    @relation(fields: [itemId], references: [id])
+  // ← Relación nombrada para permitir agregar relación servicioId en el futuro
+  solicitante Usuario @relation("MantenimientoSolicitante", fields: [solicitanteId], references: [id])
+
+  @@index([estado])
+  @@index([itemId])
+  @@map("solicitudes_mantenimiento")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  VERIFICACIONES DE INVENTARIO
+// ─────────────────────────────────────────────────────────────
+
+model VerificacionInventario {
+  id            String   @id @default(uuid())
+  usuarioId     String   @map("usuario_id")
+  ambienteId    String   @map("ambiente_id")
+  tipo          String   @db.VarChar(20)
+  observaciones String?  @db.Text
+  creadoEn      DateTime @default(now()) @map("creado_en")
+
+  usuario  Usuario               @relation(fields: [usuarioId], references: [id])
+  detalles DetalleVerificacion[]
+
+  @@index([ambienteId])
+  @@index([usuarioId])
+  @@index([creadoEn(sort: Desc)])
+  @@map("verificaciones_inventario")
+}
+
+model DetalleVerificacion {
+  id             String             @id @default(uuid())
+  verificacionId String             @map("verificacion_id")
+  itemId         Int                @map("item_id")
+  estado         EstadoVerificacion
+
+  verificacion VerificacionInventario @relation(fields: [verificacionId], references: [id], onDelete: Cascade)
+  item         Item                   @relation(fields: [itemId], references: [id])
+
+  @@unique([verificacionId, itemId])
+  @@map("detalles_verificacion")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  NOTIFICACIONES
+// ─────────────────────────────────────────────────────────────
+
+model Notificacion {
+  id         String           @id @default(uuid())
+  usuarioId  String           @map("usuario_id")
+  tipo       TipoNotificacion
+  titulo     String           @db.VarChar(200)
+  mensaje    String           @db.Text
+  leida      Boolean          @default(false)
+  urlDestino String?          @map("url_destino") @db.VarChar(500)
+  metadatos  Json?
+  creadoEn   DateTime         @default(now()) @map("creado_en")
+  leidaEn    DateTime?        @map("leida_en")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, leida])
+  @@index([creadoEn(sort: Desc)])
+  @@map("notificaciones")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  LOGS DE AUDITORÍA
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  usuarioId     String   @map("usuario_id")
+  rolUsuario    Rol      @map("rol_usuario")
+  entidad       String   @db.VarChar(50)
+  entidadId     String   @map("entidad_id") @db.VarChar(50)
+  accion        String   @db.VarChar(50)
+  area          String   @db.VarChar(50)
+  camposAntes   Json?    @map("campos_antes")
+  camposDespues Json?    @map("campos_despues")
+  ip            String?  @db.VarChar(50)
+  userAgent     String?  @map("user_agent") @db.Text
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  itemId        Int?     @map("item_id")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+  item    Item?   @relation(fields: [itemId], references: [id])
+
+  @@index([usuarioId])
+  @@index([entidad, entidadId])
+  @@index([creadoEn(sort: Desc)])
+  @@index([area])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+//  CONFIGURACIÓN DEL SISTEMA
+// ─────────────────────────────────────────────────────────────
+
+model ConfiguracionSistema {
+  id String @id @default("singleton")
+
+  limiteAdministrador Int @default(3)  @map("limite_administrador")
+  limiteAlmacen       Int @default(5)  @map("limite_almacen")
+  limiteCoordinador   Int @default(10) @map("limite_coordinador")
+  limiteEncargado     Int @default(50) @map("limite_encargado")
+  limiteInstructor    Int @default(200) @map("limite_instructor")
+  limiteServicio      Int @default(10) @map("limite_servicio")
+
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  @@map("configuracion_sistema")
+}

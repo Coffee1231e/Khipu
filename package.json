@@ -1,0 +1,16 @@
+{
+  "name": "khipu-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo para frontend y backend del sistema SENA CIC Inventory",
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter khipu-frontend dev\" \"pnpm --filter khipu-backend dev\"",
+    "dev:frontend": "pnpm --filter khipu-frontend dev",
+    "dev:backend": "pnpm --filter khipu-backend dev",
+    "install:all": "pnpm install -r"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "packageManager": "pnpm@11.5.0+sha512.dbfcc4f81cf48597afd4bc391ffdf12c11f1a9fb83a395bfa6b0a2d9cc2fd8ffebafdb1ccbd529632153f793904c2615b7f09fe1a345473fd1c35845172a8eb1"
+}

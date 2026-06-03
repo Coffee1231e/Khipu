@@ -1,0 +1,32 @@
+{
+  "name": "khipu-frontend",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.1",
+    "@tanstack/react-query": "^5.100.14",
+    "axios": "^1.16.1",
+    "lucide-react": "^1.16.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^7.15.1"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.1.8",
+    "@tailwindcss/vite": "^4.1.8",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.14"
+  }
+}

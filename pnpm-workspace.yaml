@@ -1,0 +1,11 @@
+packages:
+  - "frontend"
+  - "backend"
+allowBuilds:
+  "@prisma/client": set this to true or false
+  "@prisma/engines": false
+  esbuild: false
+  prisma: false
+  sharp: false
+configDependencies:
+  '@pnpm/plugin-types-fixer': 0.1.0
