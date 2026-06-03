@@ -52,7 +52,7 @@ export default function LoginPage() {
   useEffect(() => {
     api.get<PublicStats>('/public/stats')
       .then(({ data }) => setStats(data))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -248,7 +248,7 @@ export default function LoginPage() {
               className="btn-secondary w-full py-3 mt-4 flex items-center justify-center gap-2 border-forest-200 hover:border-forest-300"
             >
               <Download size={16} />
-              Instalar Aplicación (PWA)
+              Instalar Aplicación
             </button>
           )}
 
