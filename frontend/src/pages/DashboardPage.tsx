@@ -37,20 +37,17 @@ function DashboardHero({ nombre, heroGradient }: { nombre: string, heroGradient:
       {/* Background Decorators */}
       <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-black/10 rounded-full blur-3xl pointer-events-none" />
-      
+
       <div className="relative z-10 flex flex-col items-start justify-center gap-1">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3 text-white/80 font-medium tracking-wide text-xs md:text-sm uppercase">
           <span className="capitalize">{formatterDate.format(time)}</span>
           <span className="hidden md:inline text-white/40">•</span>
           <span className="font-mono bg-white/10 px-2 py-0.5 rounded-md backdrop-blur-md border border-white/10 shadow-sm">{formatterTime.format(time)}</span>
         </div>
-        
+
         <h1 className="font-display font-bold text-white text-2xl md:text-3xl mt-3 leading-snug">
           Bienvenido, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">{nombre?.split(' ')[0]}</span>
         </h1>
-        <p className="text-white/70 mt-1 text-sm md:text-base font-light max-w-xl">
-          Aquí tienes un resumen de la actividad y el estado de tus activos.
-        </p>
       </div>
     </div>
   );
@@ -77,20 +74,20 @@ export default function DashboardPage() {
 
   const isOptimal = healthScore >= 90;
   const isWarning = healthScore >= 70 && healthScore < 90;
-  
-  const heroGradient = isOptimal 
-    ? 'from-emerald-950 via-sena-900 to-sena-950' 
+
+  const heroGradient = isOptimal
+    ? 'from-emerald-950 via-sena-900 to-sena-950'
     : isWarning ? 'from-amber-950 via-sena-900 to-sena-950' : 'from-red-950 via-sena-900 to-sena-950';
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      
+
       {/* ─── HERO SECTION ─── */}
       <DashboardHero nombre={user?.nombre ?? 'Usuario'} heroGradient={heroGradient} />
 
       {/* ─── DASHBOARDS ESPECÍFICOS POR ROL ─── */}
       <div className="space-y-6">
-        
+
         {/* SECCIÓN: RESUMEN DE ACTIVOS (Ocupa todo el ancho) */}
         <div className="card p-6 border-forest-100 shadow-sm animate-slide-up stagger-2">
           <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-4 mb-6">
@@ -109,7 +106,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-emerald-100 shadow-sm">
               <div className="bg-emerald-50/40 border-b border-emerald-100 px-4 py-3 flex justify-center items-center">
                 <p className="text-emerald-800 text-xs font-semibold uppercase tracking-wider">Activos</p>
@@ -141,7 +138,7 @@ export default function DashboardPage() {
 
         {/* SECCIÓN INFERIOR: Registro y Exclusivos (Dividido en 2 columnas) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
+
           {/* COLUMNA IZQUIERDA: Actividad Reciente */}
           <div className="space-y-6 animate-slide-up stagger-3">
             <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-2">
@@ -158,11 +155,10 @@ export default function DashboardPage() {
                 <div className="divide-y divide-forest-50">
                   {stats.movimientosRecientes.slice(0, 4).map(mov => (
                     <div key={mov.id} className="p-3 hover:bg-forest-50/50 transition-colors flex gap-3">
-                      <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${
-                        mov.tipo === 'entrada' ? 'bg-emerald-500' :
+                      <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${mov.tipo === 'entrada' ? 'bg-emerald-500' :
                         mov.tipo === 'baja' ? 'bg-red-500' :
-                        mov.tipo === 'mantenimiento' ? 'bg-amber-500' : 'bg-blue-500'
-                      }`} />
+                          mov.tipo === 'mantenimiento' ? 'bg-amber-500' : 'bg-blue-500'
+                        }`} />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-sena-900 truncate" title={mov.item?.nombre}>
                           {mov.item?.nombre ?? 'Ítem desconocido'}

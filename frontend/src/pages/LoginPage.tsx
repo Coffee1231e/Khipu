@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Eye, EyeOff, Building2, LayoutGrid } from 'lucide-react';
+import { Shield, Eye, EyeOff, Building2, LayoutGrid, Download } from 'lucide-react';
 import { api } from '@lib/api';
 import { useAuth } from '@features/auth/context/AuthContext';
 import toast from 'react-hot-toast';
@@ -25,6 +25,25 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<PublicStats>({ naves: 0, ambientes: 0 });
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   // Redirigir si ya está logueado
   useEffect(() => { if (user) navigate('/dashboard', { replace: true }); }, [user]);
@@ -222,6 +241,16 @@ export default function LoginPage() {
               )}
             </button>
           </form>
+
+          {deferredPrompt && (
+            <button
+              onClick={handleInstallClick}
+              className="btn-secondary w-full py-3 mt-4 flex items-center justify-center gap-2 border-forest-200 hover:border-forest-300"
+            >
+              <Download size={16} />
+              Instalar Aplicación (PWA)
+            </button>
+          )}
 
           <p className="text-center text-forest-400 text-xs mt-8">
             Khipu · SENA CIC · {new Date().getFullYear()}

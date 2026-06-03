@@ -1,10 +1,34 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['Khipu_Logo.webp'],
+      manifest: {
+        name: 'Khipu',
+        short_name: 'Khipu',
+        description: 'Sistema de gestión de activos institucionales SENA CIC',
+        theme_color: '#164e63',
+        background_color: '#ffffff',
+        display: 'standalone',
+        icons: [
+          {
+            src: '/Khipu_Logo.webp',
+            sizes: '512x512',
+            type: 'image/webp',
+            purpose: 'any maskable'
+          }
+        ]
+      }
+    })
+  ],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
