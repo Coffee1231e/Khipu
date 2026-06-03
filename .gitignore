@@ -25,6 +25,8 @@ pnpm-debug.log*
 *.tsbuildinfo
 .eslintcache
 .vscode/
+README.md
+ARCHITECTURE.md
 *.suo
 *.ntvs*
 *.njsproj
