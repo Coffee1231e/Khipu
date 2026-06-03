@@ -56,7 +56,7 @@ export const authController = {
       res.cookie('khipu_token', token, {
         httpOnly: true,
         secure: isProd,
-        sameSite: 'lax', // Permite que funcione entre subdominios, en prod usarías 'none' si hay distinto origen
+        sameSite: isProd ? 'none' : 'lax', // 'none' es obligatorio para CORS cross-origin en prod
         maxAge: 8 * 60 * 60 * 1000, // 8 horas
       });
 
@@ -116,7 +116,7 @@ export const authController = {
     res.clearCookie('khipu_token', {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'lax',
+      sameSite: isProd ? 'none' : 'lax',
     });
     res.json({ ok: true, mensaje: 'Sesión cerrada correctamente.' });
   },
