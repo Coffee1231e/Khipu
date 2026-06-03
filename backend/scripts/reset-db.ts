@@ -1,9 +1,4 @@
 /// <reference types="node" />
-// ============================================================
-//  scripts/reset-db.ts
-//  SOLO PARA DESARROLLO — Limpia y recrea la BD con configuración inicial.
-//  USO: pnpm db:reset
-// ============================================================
 
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
