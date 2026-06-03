@@ -20,7 +20,6 @@ export const loginSchema = z.object({
 export const crearUsuarioSchema = z.object({
   nombre: z.string().min(2).max(200).trim(),
   email: z.string().email('Correo electrónico inválido'),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres').max(100),
   rol: z.enum(['administrador', 'almacen', 'coordinador', 'encargado', 'instructor', 'servicio']),
   fichaId: uuid.optional().nullable(),
   naveIds: z.array(uuid).optional(),

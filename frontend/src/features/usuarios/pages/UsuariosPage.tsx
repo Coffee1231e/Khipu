@@ -24,10 +24,10 @@ const ROL_COLORS: Record<Rol, string> = {
 };
 
 interface FormData {
-  nombre: string; email: string; password: string;
+  nombre: string; email: string;
   rol: Rol | ''; naveIds: string[]; ambienteIds: string[];
 }
-const EMPTY: FormData = { nombre: '', email: '', password: '', rol: '', naveIds: [], ambienteIds: [] };
+const EMPTY: FormData = { nombre: '', email: '', rol: '', naveIds: [], ambienteIds: [] };
 
 export default function UsuariosPage() {
   const { user: me } = useAuth();
@@ -54,7 +54,7 @@ export default function UsuariosPage() {
   const abrirEditar = (u: Usuario) => {
     setActivo(u);
     setForm({
-      nombre: u.nombre, email: u.email, password: '', rol: u.rol,
+      nombre: u.nombre, email: u.email, rol: u.rol,
       naveIds: u.naves?.map(n => n.nave.id) ?? [],
       ambienteIds: u.ambientes?.map(a => a.ambiente.id) ?? [],
     });
@@ -63,12 +63,10 @@ export default function UsuariosPage() {
 
   const handleGuardar = async () => {
     if (!form.rol) { toast.error('Selecciona un rol'); return; }
-    if (modal === 'crear' && !form.password) { toast.error('La contraseña es requerida'); return; }
     setLoading(true);
     try {
       const body = {
         nombre: form.nombre, email: form.email, rol: form.rol,
-        ...(form.password && { password: form.password }),
         naveIds: form.rol === 'coordinador' ? form.naveIds : [],
         ambienteIds: ['encargado', 'instructor'].includes(form.rol) ? form.ambienteIds : [],
       };
@@ -213,14 +211,22 @@ export default function UsuariosPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="label">{modal === 'crear' ? 'Contraseña *' : 'Nueva contraseña (opcional)'}</label>
-              <input className="input mt-1" type="password" value={form.password}
-                onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                placeholder={modal === 'crear' ? 'Mínimo 8 caracteres' : 'Dejar vacío para no cambiar'}
-                minLength={modal === 'crear' ? 8 : undefined}
-              />
-            </div>
+            {modal === 'crear' ? (
+              <div>
+                <label className="label">Contraseña</label>
+                <div className="mt-1 p-2.5 bg-forest-50 border border-forest-100 rounded-lg text-sm text-forest-600">
+                  Se generará automáticamente y se enviará por correo.
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="label">Nueva contraseña (opcional)</label>
+                <input className="input mt-1" type="password" value={passwordNueva}
+                  onChange={e => setPasswordNueva(e.target.value)}
+                  placeholder="Dejar vacío para no cambiar"
+                />
+              </div>
+            )}
             <div>
               <label className="label">Rol *</label>
               <select className="input mt-1" value={form.rol} onChange={e => setForm(p => ({ ...p, rol: e.target.value as Rol, naveIds: [], ambienteIds: [] }))}>

@@ -10,6 +10,7 @@ import { emailService } from '../../infrastructure/email/email.service';
 import { registrarAudit } from '../../infrastructure/database/auditLog.service';
 import { cacheService } from '../../infrastructure/cache/cache.service';
 import { NotFoundError, ConflictError, RoleLimitReachedError } from '../../shared/errors/AppError';
+import { generarPasswordSegura } from '../../shared/utils/password.util';
 
 const ROL_LABELS: Record<Rol, string> = {
   administrador: 'Administrador', almacen: 'Almacén',
@@ -57,10 +58,10 @@ export const usuariosController = {
   async crear(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const {
-        nombre, email, password, rol, fichaId,
+        nombre, email, rol, fichaId,
         naveIds = [], ambienteIds = [],
       } = req.body as {
-        nombre: string; email: string; password: string; rol: Rol;
+        nombre: string; email: string; rol: Rol;
         fichaId?: string | null; naveIds?: string[]; ambienteIds?: string[];
       };
 
@@ -69,7 +70,8 @@ export const usuariosController = {
 
       await verificarLimiteRol(rol);
 
-      const passwordHash = await bcrypt.hash(password, 12);
+      const passwordGenerada = generarPasswordSegura(12);
+      const passwordHash = await bcrypt.hash(passwordGenerada, 12);
 
       const usuario = await prisma.usuario.create({
         data: {
@@ -85,7 +87,7 @@ export const usuariosController = {
         where: { id: 'singleton' }, create: { id: 'singleton' }, update: {},
       });
 
-      await emailService.enviarBienvenida({ nombre, email, password, rol: ROL_LABELS[rol] });
+      await emailService.enviarBienvenida({ nombre, email, password: passwordGenerada, rol: ROL_LABELS[rol] });
 
       await registrarAudit({
         usuarioId: req.usuario.id, rolUsuario: req.usuario.rol,
