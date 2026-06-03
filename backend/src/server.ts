@@ -20,6 +20,9 @@ initSentry();
 
 const app = express();
 
+// Confiar en el proxy (ej. Railway) para rate-limiting e IPs reales
+app.set('trust proxy', 1);
+
 // ─── Seguridad HTTP ──────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
