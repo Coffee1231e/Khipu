@@ -2,7 +2,41 @@ import { useState } from 'react';
 import { api } from '@lib/api';
 import { useFetch } from '@shared/hooks/useFetch';
 import { Modal, EmptyState, PageLoader, ConfirmDialog } from '@shared/components/ui';
-import { Tags, Plus, Edit2, Trash2, Package } from 'lucide-react';
+import { 
+  Tags, Plus, Edit2, Trash2, Package, 
+  Monitor, Wrench, Droplet, Zap, Book, Box, 
+  Briefcase, Camera, Truck, Shield, Coffee,
+  HardHat, HeartPulse, Leaf, Scissors, Armchair
+} from 'lucide-react';
+
+const ICON_MAPPINGS = [
+  { pattern: /computador|pc|laptop|tecnolog|sistema|software|red|router|servidor|pantalla|teclado/i, Icon: Monitor },
+  { pattern: /herramienta|mantenimiento|ferreter|mecanic|taladro|martillo|alicate|llave/i, Icon: Wrench },
+  { pattern: /electri|energ|cable|iluminaci|bombill|electronic|circuito|multimetro/i, Icon: Zap },
+  { pattern: /construcci|obra|civil|material|cemento|arquitectura|topografia|ladrillo/i, Icon: HardHat },
+  { pattern: /aseo|limpieza|liquid|escoba|trapeador|desinfectante|jabon/i, Icon: Droplet },
+  { pattern: /libro|papeleri|oficina|documento|archivador|marcador|papel/i, Icon: Book },
+  { pattern: /audiovisual|camara|video|foto|sonido|microfono|proyector|multimedia|tv/i, Icon: Camera },
+  { pattern: /vehiculo|transporte|auto|moto|automotriz|motor|logistica/i, Icon: Truck },
+  { pattern: /seguridad|epp|casco|botiquin|extintor|brigada|guante|bota/i, Icon: Shield },
+  { pattern: /alimento|comida|bebida|cafeteri|cocina|gastronomi|chef|olla/i, Icon: Coffee },
+  { pattern: /salud|enfermeri|medic|camilla|farmacia/i, Icon: HeartPulse },
+  { pattern: /agro|agricola|planta|cultivo|granja|veterinaria|semilla/i, Icon: Leaf },
+  { pattern: /confecci|textil|moda|tela|hilo|prenda|costura/i, Icon: Scissors },
+  { pattern: /mueble|mobiliario|silla|mesa|escritorio|estante/i, Icon: Armchair },
+  { pattern: /malet|bolso|equipaje/i, Icon: Briefcase },
+  { pattern: /caja|empaque|insumo/i, Icon: Box },
+];
+
+const getCategoryIcon = (name: string, size = 18, className = "text-sena-600") => {
+  const normalizedStr = name.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // Remueve tildes
+  const match = ICON_MAPPINGS.find(mapping => mapping.pattern.test(normalizedStr));
+  if (match) {
+    const IconComponent = match.Icon;
+    return <IconComponent size={size} className={className} />;
+  }
+  return <Tags size={size} className={className} />;
+};
 import toast from 'react-hot-toast';
 import type { CategoriaItem } from '@shared/types';
 
@@ -64,7 +98,7 @@ export default function CategoriasPage() {
             <div key={c.id} className="card p-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-sena-100 flex items-center justify-center flex-shrink-0">
-                  <Tags size={18} className="text-sena-600" />
+                  {getCategoryIcon(c.nombre)}
                 </div>
                 <div>
                   <p className="font-semibold text-sena-900">{c.nombre}</p>
