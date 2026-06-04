@@ -27,6 +27,8 @@ pnpm-debug.log*
 .vscode/
 README.md
 ARCHITECTURE.md
+exposicion_khipu.md
+preguntas_entrevista.md
 *.suo
 *.ntvs*
 *.njsproj
