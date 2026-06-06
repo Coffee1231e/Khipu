@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = '/login';
   }, []);
 
-  const rol = state.user?.rol as Rol | undefined;
+  const rol = state.user?.rol?.toLowerCase() as Rol | undefined;
 
   const value: AuthContextValue = {
     ...state,
