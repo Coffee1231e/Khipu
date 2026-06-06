@@ -163,7 +163,7 @@ export const catalogoController = {
         ];
       }
 
-      const [naves, ambientes, itemsPorEstado, totalItems, movimientosRecientes] = await Promise.all([
+      const [naves, ambientes, itemsPorEstado, totalItems, movimientosRecientes, itemsPorCategoriaRaw, categoriasTodas] = await Promise.all([
         prisma.nave.count({ where: naveFilter }),
         prisma.ambiente.count({ where: ambienteFilter }),
         prisma.item.groupBy({ by: ['estado'], where: itemFilter, _count: true }),
@@ -176,6 +176,8 @@ export const catalogoController = {
             usuario: { select: { nombre: true, rol: true } },
           },
         }),
+        prisma.item.groupBy({ by: ['categoriaId'], where: itemFilter, _count: true }),
+        prisma.categoriaItem.findMany({ select: { id: true, nombre: true } }),
       ]);
 
       let alertasCriticas = 0;
@@ -205,6 +207,14 @@ export const catalogoController = {
       const itemsDanados = estadosMap['danado'] ?? 0;
       alertasCriticas = mantenimientosPendientes + trasladosPendientes + itemsDanados;
 
+      const categorias = itemsPorCategoriaRaw.map(ic => {
+        const cat = categoriasTodas.find(c => c.id === ic.categoriaId);
+        return {
+          nombre: cat?.nombre ?? 'Desconocida',
+          cantidad: ic._count
+        };
+      }).sort((a, b) => b.cantidad - a.cantidad);
+
       res.json({
         ok: true,
         stats: {
@@ -216,6 +226,7 @@ export const catalogoController = {
             enMantenimiento: estadosMap['en_mantenimiento'] ?? 0,
             baja: estadosMap['baja'] ?? 0,
           },
+          categorias,
           movimientosRecientes,
           alertasCriticas,
           trasladosPendientes,

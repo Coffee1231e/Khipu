@@ -7,10 +7,12 @@ import { TIPO_MOVIMIENTO_LABELS } from '@shared/types';
 import type { Movimiento } from '@shared/types';
 import { formatDistanceToNow } from '@features/notificaciones/utils/formatDate';
 import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 interface Stats {
   naves: number; ambientes: number; totalItems: number;
   items: { activos: number; inactivos: number; danados: number; enMantenimiento: number; baja: number };
+  categorias?: { nombre: string; cantidad: number }[];
   movimientosRecientes: Movimiento[];
   alertasCriticas: number;
   trasladosPendientes: number;
@@ -66,8 +68,6 @@ export default function DashboardPage() {
   if (loading || !stats) return <PageLoader />;
 
   // Cálculo del score de salud
-  // Para servicio: salud basada en mantenimientos resueltos vs pendientes (si hubiera datos).
-  // Como simplificación: % de items que NO están dañados ni en mantenimiento.
   const itemsProblematicos = stats.items.danados + stats.items.enMantenimiento;
   const totalRelevant = stats.totalItems > 0 ? stats.totalItems : 1;
   const healthScore = Math.max(0, Math.round(((totalRelevant - itemsProblematicos) / totalRelevant) * 100));
@@ -79,37 +79,34 @@ export default function DashboardPage() {
     ? 'from-emerald-950 via-sena-900 to-sena-950'
     : isWarning ? 'from-amber-950 via-sena-900 to-sena-950' : 'from-red-950 via-sena-900 to-sena-950';
 
-  return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+  const pieData = [
+    { name: 'Activos', value: stats.items.activos, color: '#10b981' }, // emerald-500
+    { name: 'En Mantenimiento', value: stats.items.enMantenimiento, color: '#f59e0b' }, // amber-500
+    { name: 'Dañados', value: stats.items.danados, color: '#ef4444' }, // red-500
+  ].filter(d => d.value > 0);
 
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto pb-8">
       {/* ─── HERO SECTION ─── */}
       <DashboardHero nombre={user?.nombre ?? 'Usuario'} heroGradient={heroGradient} />
 
       {/* ─── DASHBOARDS ESPECÍFICOS POR ROL ─── */}
-      <div className="space-y-6">
-
-        {/* SECCIÓN: RESUMEN DE ACTIVOS (Ocupa todo el ancho) */}
-        <div className="card p-6 border-forest-100 shadow-sm animate-slide-up stagger-2">
-          <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-4 mb-6">
-            <CheckCircle2 size={20} className="text-sena-600" /> Resumen de Activos
-          </h3>
-
+      {esAdmin ? (
+        <div className="space-y-6 animate-slide-up stagger-2">
+          {/* PRIMERA FILA DE 4 TARJETAS: ESTADOS DE ITEMS */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Tarjetas comunes a (casi) todos los roles */}
-            {(!esServicio) && (
-              <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-forest-100 shadow-sm">
-                <div className="bg-sena-50/40 border-b border-forest-100 px-4 py-3 flex justify-center items-center">
-                  <p className="text-sena-800 text-xs font-semibold uppercase tracking-wider">Ítems Totales</p>
-                </div>
-                <div className="px-4 py-6 flex justify-center items-center bg-white">
-                  <p className="font-display font-bold text-sena-900 text-4xl">{stats.totalItems}</p>
-                </div>
+            <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-forest-100 shadow-sm">
+              <div className="bg-sena-50/40 border-b border-forest-100 px-4 py-3 flex justify-center items-center">
+                <p className="text-sena-800 text-xs font-semibold uppercase tracking-wider">Ítems Totales</p>
               </div>
-            )}
-
+              <div className="px-4 py-6 flex justify-center items-center bg-white">
+                <p className="font-display font-bold text-sena-900 text-4xl">{stats.totalItems}</p>
+              </div>
+            </div>
+            
             <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-emerald-100 shadow-sm">
               <div className="bg-emerald-50/40 border-b border-emerald-100 px-4 py-3 flex justify-center items-center">
-                <p className="text-emerald-800 text-xs font-semibold uppercase tracking-wider">Activos</p>
+                <p className="text-emerald-800 text-xs font-semibold uppercase tracking-wider">Ítems Activos</p>
               </div>
               <div className="px-4 py-6 flex justify-center items-center bg-white">
                 <p className="font-display font-bold text-emerald-900 text-4xl">{stats.items.activos}</p>
@@ -118,7 +115,7 @@ export default function DashboardPage() {
 
             <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-amber-100 shadow-sm">
               <div className="bg-amber-50/40 border-b border-amber-100 px-4 py-3 flex justify-center items-center">
-                <p className="text-amber-800 text-xs font-semibold uppercase tracking-wider">Mantenimiento</p>
+                <p className="text-amber-800 text-xs font-semibold uppercase tracking-wider">Ítems en Mantenimiento</p>
               </div>
               <div className="px-4 py-6 flex justify-center items-center bg-white">
                 <p className="font-display font-bold text-amber-900 text-4xl">{stats.items.enMantenimiento}</p>
@@ -127,96 +124,298 @@ export default function DashboardPage() {
 
             <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-red-100 shadow-sm">
               <div className="bg-red-50/40 border-b border-red-100 px-4 py-3 flex justify-center items-center">
-                <p className="text-red-800 text-xs font-semibold uppercase tracking-wider">Dañados</p>
+                <p className="text-red-800 text-xs font-semibold uppercase tracking-wider">Ítems Dañados</p>
               </div>
               <div className="px-4 py-6 flex justify-center items-center bg-white">
                 <p className="font-display font-bold text-red-900 text-4xl">{stats.items.danados}</p>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* SECCIÓN INFERIOR: Registro y Exclusivos (Dividido en 2 columnas) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* SEGUNDA FILA DE 4 TARJETAS: GESTIÓN */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-blue-100 shadow-sm">
+              <div className="bg-blue-50/40 border-b border-blue-100 px-4 py-3 flex justify-center items-center">
+                <p className="text-blue-800 text-xs font-semibold uppercase tracking-wider">Naves</p>
+              </div>
+              <div className="px-4 py-6 flex justify-center items-center bg-white">
+                <p className="font-display font-bold text-blue-900 text-4xl">{stats.naves}</p>
+              </div>
+            </div>
 
-          {/* COLUMNA IZQUIERDA: Actividad Reciente */}
-          <div className="space-y-6 animate-slide-up stagger-3">
-            <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-2">
+            <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-indigo-100 shadow-sm">
+              <div className="bg-indigo-50/40 border-b border-indigo-100 px-4 py-3 flex justify-center items-center">
+                <p className="text-indigo-800 text-xs font-semibold uppercase tracking-wider">Ambientes</p>
+              </div>
+              <div className="px-4 py-6 flex justify-center items-center bg-white">
+                <p className="font-display font-bold text-indigo-900 text-4xl">{stats.ambientes}</p>
+              </div>
+            </div>
+
+            <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-orange-100 shadow-sm cursor-pointer" onClick={() => navigate('/traslados')}>
+              <div className="bg-orange-50/40 border-b border-orange-100 px-4 py-3 flex justify-center items-center">
+                <p className="text-orange-800 text-xs font-semibold uppercase tracking-wider text-center">Traslados Pendientes</p>
+              </div>
+              <div className="px-4 py-6 flex justify-center items-center bg-white">
+                <p className="font-display font-bold text-orange-900 text-4xl">{stats.trasladosPendientes}</p>
+              </div>
+            </div>
+
+            <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-rose-100 shadow-sm cursor-pointer" onClick={() => navigate('/mantenimiento')}>
+              <div className="bg-rose-50/40 border-b border-rose-100 px-4 py-3 flex justify-center items-center">
+                <p className="text-rose-800 text-xs font-semibold uppercase tracking-wider text-center">Tickets de Mantenimiento</p>
+              </div>
+              <div className="px-4 py-6 flex justify-center items-center bg-white">
+                <p className="font-display font-bold text-rose-900 text-4xl">{stats.mantenimientosPendientes}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* GRÁFICOS */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Gráfico Circular: Salud del Inventario */}
+            <div className="card p-6 border-forest-100 shadow-sm flex flex-col">
+              <h3 className="font-display font-bold text-sena-900 text-lg mb-2 text-center border-b border-forest-100 pb-3">
+                Salud del Inventario
+              </h3>
+              <div className="flex-1 min-h-[250px] relative">
+                {pieData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        innerRadius={70}
+                        outerRadius={90}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        labelLine={false}
+                        className="text-xs font-medium"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip formatter={(value) => [`${value} ítems`, 'Cantidad']} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center text-forest-400 text-sm">
+                    No hay datos suficientes
+                  </div>
+                )}
+                {/* Score central */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-3xl font-display font-bold text-sena-900">{healthScore}%</span>
+                  <span className="text-[10px] uppercase tracking-wider text-forest-500 font-semibold">Salud</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Gráfico de Barras: Ítems por Categoría */}
+            <div className="card p-6 border-forest-100 shadow-sm flex flex-col">
+              <h3 className="font-display font-bold text-sena-900 text-lg mb-2 text-center border-b border-forest-100 pb-3">
+                Ítems por Categoría
+              </h3>
+              <div className="flex-1 h-[250px] overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar">
+                {(!stats.categorias || stats.categorias.length === 0) ? (
+                   <div className="h-full flex items-center justify-center text-forest-400 text-sm">
+                     No hay categorías registradas
+                   </div>
+                ) : (
+                  <div style={{ height: Math.max(250, stats.categorias.length * 40) }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={stats.categorias}
+                        layout="vertical"
+                        margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                        <XAxis type="number" hide />
+                        <YAxis dataKey="nombre" type="category" width={110} tick={{fontSize: 11, fill: '#334155'}} axisLine={false} tickLine={false} />
+                        <RechartsTooltip cursor={{fill: '#f1f5f9'}} formatter={(value) => [`${value} ítems`, 'Cantidad']} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                        <Bar dataKey="cantidad" fill="#047857" radius={[0, 4, 4, 0]} barSize={20} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* REGISTRO DE ACTIVIDAD */}
+          <div className="card p-6 border-forest-100 shadow-sm">
+            <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-4 mb-4">
               <Clock size={20} className="text-sena-600" /> Registro de Actividad
             </h3>
-
-            <div className="card p-0 overflow-hidden border-forest-200 shadow-sm">
-              {stats.movimientosRecientes.length === 0 ? (
-                <div className="p-8 text-center text-forest-400">
-                  <ClipboardList size={32} className="mx-auto opacity-30 mb-2" />
-                  <p className="text-sm">No hay movimientos recientes en tu área.</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-forest-50">
-                  {stats.movimientosRecientes.slice(0, 4).map(mov => (
-                    <div key={mov.id} className="p-3 hover:bg-forest-50/50 transition-colors flex gap-3">
-                      <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${mov.tipo === 'entrada' ? 'bg-emerald-500' :
+            
+            {stats.movimientosRecientes.length === 0 ? (
+              <div className="py-8 text-center text-forest-400">
+                <ClipboardList size={32} className="mx-auto opacity-30 mb-2" />
+                <p className="text-sm">No hay movimientos recientes en el sistema.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-forest-50">
+                {stats.movimientosRecientes.slice(0, 6).map(mov => (
+                  <div key={mov.id} className="py-3 px-2 hover:bg-forest-50/50 transition-colors flex gap-4 items-center">
+                    <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        mov.tipo === 'entrada' ? 'bg-emerald-500' :
                         mov.tipo === 'baja' ? 'bg-red-500' :
-                          mov.tipo === 'mantenimiento' ? 'bg-amber-500' : 'bg-blue-500'
-                        }`} />
-                      <div className="min-w-0">
+                        mov.tipo === 'mantenimiento' ? 'bg-amber-500' : 'bg-blue-500'
+                      }`} />
+                    <div className="min-w-0 flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4 items-center">
+                      <div>
                         <p className="text-sm font-semibold text-sena-900 truncate" title={mov.item?.nombre}>
                           {mov.item?.nombre ?? 'Ítem desconocido'}
                         </p>
-                        <p className="text-xs text-forest-600 mt-0.5">
-                          {TIPO_MOVIMIENTO_LABELS[mov.tipo]} por <span className="font-medium text-sena-700">{mov.usuario?.nombre}</span>
-                        </p>
-                        <p className="text-[10px] text-forest-400 mt-1 font-mono">
-                          {formatDistanceToNow(mov.fecha)}
+                        <p className="text-xs text-forest-500 mt-0.5 font-mono">
+                          {mov.item?.numeroInventario}
                         </p>
                       </div>
+                      <div className="text-sm text-forest-600">
+                        {TIPO_MOVIMIENTO_LABELS[mov.tipo]} por <span className="font-medium text-sena-700">{mov.usuario?.nombre}</span>
+                      </div>
+                      <div className="text-xs text-forest-400 text-left md:text-right font-mono">
+                        {formatDistanceToNow(mov.fecha)}
+                      </div>
                     </div>
-                  ))}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* SECCIÓN: RESUMEN DE ACTIVOS (Ocupa todo el ancho) */}
+          <div className="card p-6 border-forest-100 shadow-sm animate-slide-up stagger-2">
+            <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-4 mb-6">
+              <CheckCircle2 size={20} className="text-sena-600" /> Resumen de Activos
+            </h3>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Tarjetas comunes a (casi) todos los roles */}
+              {(!esServicio) && (
+                <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-forest-100 shadow-sm">
+                  <div className="bg-sena-50/40 border-b border-forest-100 px-4 py-3 flex justify-center items-center">
+                    <p className="text-sena-800 text-xs font-semibold uppercase tracking-wider">Ítems Totales</p>
+                  </div>
+                  <div className="px-4 py-6 flex justify-center items-center bg-white">
+                    <p className="font-display font-bold text-sena-900 text-4xl">{stats.totalItems}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-emerald-100 shadow-sm">
+                <div className="bg-emerald-50/40 border-b border-emerald-100 px-4 py-3 flex justify-center items-center">
+                  <p className="text-emerald-800 text-xs font-semibold uppercase tracking-wider">Activos</p>
+                </div>
+                <div className="px-4 py-6 flex justify-center items-center bg-white">
+                  <p className="font-display font-bold text-emerald-900 text-4xl">{stats.items.activos}</p>
+                </div>
+              </div>
+
+              <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-amber-100 shadow-sm">
+                <div className="bg-amber-50/40 border-b border-amber-100 px-4 py-3 flex justify-center items-center">
+                  <p className="text-amber-800 text-xs font-semibold uppercase tracking-wider">Mantenimiento</p>
+                </div>
+                <div className="px-4 py-6 flex justify-center items-center bg-white">
+                  <p className="font-display font-bold text-amber-900 text-4xl">{stats.items.enMantenimiento}</p>
+                </div>
+              </div>
+
+              <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-red-100 shadow-sm">
+                <div className="bg-red-50/40 border-b border-red-100 px-4 py-3 flex justify-center items-center">
+                  <p className="text-red-800 text-xs font-semibold uppercase tracking-wider">Dañados</p>
+                </div>
+                <div className="px-4 py-6 flex justify-center items-center bg-white">
+                  <p className="font-display font-bold text-red-900 text-4xl">{stats.items.danados}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECCIÓN INFERIOR: Registro y Exclusivos (Dividido en 2 columnas) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* COLUMNA IZQUIERDA: Actividad Reciente */}
+            <div className="space-y-6 animate-slide-up stagger-3">
+              <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-2">
+                <Clock size={20} className="text-sena-600" /> Registro de Actividad
+              </h3>
+
+              <div className="card p-0 overflow-hidden border-forest-200 shadow-sm">
+                {stats.movimientosRecientes.length === 0 ? (
+                  <div className="p-8 text-center text-forest-400">
+                    <ClipboardList size={32} className="mx-auto opacity-30 mb-2" />
+                    <p className="text-sm">No hay movimientos recientes en tu área.</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-forest-50">
+                    {stats.movimientosRecientes.slice(0, 4).map(mov => (
+                      <div key={mov.id} className="p-3 hover:bg-forest-50/50 transition-colors flex gap-3">
+                        <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${mov.tipo === 'entrada' ? 'bg-emerald-500' :
+                          mov.tipo === 'baja' ? 'bg-red-500' :
+                            mov.tipo === 'mantenimiento' ? 'bg-amber-500' : 'bg-blue-500'
+                          }`} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-sena-900 truncate" title={mov.item?.nombre}>
+                            {mov.item?.nombre ?? 'Ítem desconocido'}
+                          </p>
+                          <p className="text-xs text-forest-600 mt-0.5">
+                            {TIPO_MOVIMIENTO_LABELS[mov.tipo]} por <span className="font-medium text-sena-700">{mov.usuario?.nombre}</span>
+                          </p>
+                          <p className="text-[10px] text-forest-400 mt-1 font-mono">
+                            {formatDistanceToNow(mov.fecha)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* COLUMNA DERECHA: Tarjetas Exclusivas por Rol */}
+            <div className="space-y-4 animate-slide-up stagger-4">
+              <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-2">
+                <Map size={20} className="text-sena-600" /> Gestión y Tareas
+              </h3>
+
+              {(esAdmin || esAlmacen || esCoordinador) && (
+                <div className="card p-5 bg-gradient-to-r from-blue-50 to-white border border-blue-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-800 text-xs font-medium uppercase tracking-wider mb-1">Estructura</p>
+                    <p className="font-display font-bold text-blue-950 text-2xl">
+                      {stats.naves} <span className="text-lg font-medium text-blue-700">Naves</span> · {stats.ambientes} <span className="text-lg font-medium text-blue-700">Ambientes</span>
+                    </p>
+                  </div>
+                  <Map size={32} className="text-blue-300 opacity-50" />
+                </div>
+              )}
+
+              {(esAdmin || esAlmacen || esCoordinador || esEncargado || esInstructor) && (
+                <div className="card p-5 bg-gradient-to-r from-amber-50 to-white border border-amber-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/traslados')}>
+                  <div>
+                    <p className="text-amber-800 text-xs font-medium uppercase tracking-wider mb-1">Traslados Pendientes</p>
+                    <p className="font-display font-bold text-amber-950 text-2xl">{stats.trasladosPendientes}</p>
+                  </div>
+                  <ArrowLeftRight size={32} className="text-amber-300 opacity-50" />
+                </div>
+              )}
+
+              {(esServicio || esAdmin || esEncargado) && (
+                <div className="card p-5 bg-gradient-to-r from-red-50 to-white border border-red-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/mantenimiento')}>
+                  <div>
+                    <p className="text-red-800 text-xs font-medium uppercase tracking-wider mb-1">Tickets de Mantenimiento</p>
+                    <p className="font-display font-bold text-red-950 text-2xl">{stats.mantenimientosPendientes}</p>
+                  </div>
+                  <Wrench size={32} className="text-red-300 opacity-50" />
                 </div>
               )}
             </div>
           </div>
-
-          {/* COLUMNA DERECHA: Tarjetas Exclusivas por Rol */}
-          <div className="space-y-4 animate-slide-up stagger-4">
-            <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-2">
-              <Map size={20} className="text-sena-600" /> Gestión y Tareas
-            </h3>
-
-            {(esAdmin || esAlmacen || esCoordinador) && (
-              <div className="card p-5 bg-gradient-to-r from-blue-50 to-white border border-blue-100 flex items-center justify-between">
-                <div>
-                  <p className="text-blue-800 text-xs font-medium uppercase tracking-wider mb-1">Estructura</p>
-                  <p className="font-display font-bold text-blue-950 text-2xl">
-                    {stats.naves} <span className="text-lg font-medium text-blue-700">Naves</span> · {stats.ambientes} <span className="text-lg font-medium text-blue-700">Ambientes</span>
-                  </p>
-                </div>
-                <Map size={32} className="text-blue-300 opacity-50" />
-              </div>
-            )}
-
-            {(esAdmin || esAlmacen || esCoordinador || esEncargado || esInstructor) && (
-              <div className="card p-5 bg-gradient-to-r from-amber-50 to-white border border-amber-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/traslados')}>
-                <div>
-                  <p className="text-amber-800 text-xs font-medium uppercase tracking-wider mb-1">Traslados Pendientes</p>
-                  <p className="font-display font-bold text-amber-950 text-2xl">{stats.trasladosPendientes}</p>
-                </div>
-                <ArrowLeftRight size={32} className="text-amber-300 opacity-50" />
-              </div>
-            )}
-
-            {(esServicio || esAdmin || esEncargado) && (
-              <div className="card p-5 bg-gradient-to-r from-red-50 to-white border border-red-100 flex items-center justify-between cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/mantenimiento')}>
-                <div>
-                  <p className="text-red-800 text-xs font-medium uppercase tracking-wider mb-1">Tickets de Mantenimiento</p>
-                  <p className="font-display font-bold text-red-950 text-2xl">{stats.mantenimientosPendientes}</p>
-                </div>
-                <Wrench size={32} className="text-red-300 opacity-50" />
-              </div>
-            )}
-          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
