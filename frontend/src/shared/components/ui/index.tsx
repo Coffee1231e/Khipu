@@ -134,6 +134,8 @@ export function SelectSearch({
   const ref = useRef<HTMLDivElement>(null);
 
   const selected = options.find((o) => o.value === value);
+  const displayValue = open ? query : (selected ? selected.label : '');
+
   const filtered = options.filter((o) =>
     o.label.toLowerCase().includes(query.toLowerCase()) ||
     o.sublabel?.toLowerCase().includes(query.toLowerCase()),
@@ -152,33 +154,36 @@ export function SelectSearch({
   return (
     <div className={`relative ${className}`} ref={ref}>
       {label && <label className="label mb-1">{label}</label>}
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => { setOpen((v) => !v); setQuery(''); }}
-        className={`input text-left flex items-center justify-between gap-2 ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+      <div
+        className={`flex items-center justify-between gap-2 bg-white border border-forest-200 rounded-xl px-3 py-2 transition-all ${
+          disabled ? 'opacity-60 cursor-not-allowed bg-forest-50' : 'hover:border-forest-300 focus-within:border-sena-400 focus-within:ring-2 focus-within:ring-sena-100'
+        }`}
       >
-        <span className={selected ? 'text-sena-900' : 'text-forest-400'}>
-          {selected ? selected.label : placeholder}
-        </span>
-        <span className="text-forest-400 text-xs">▼</span>
-      </button>
+        <input
+          type="text"
+          disabled={disabled}
+          value={displayValue}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (!open) setOpen(true);
+            if (value && e.target.value !== selected?.label) {
+              onChange('');
+            }
+          }}
+          onClick={() => {
+            if (!disabled && !open) {
+              setOpen(true);
+              setQuery('');
+            }
+          }}
+          placeholder={placeholder}
+          className="w-full bg-transparent focus:outline-none text-sm text-sena-900 placeholder:text-forest-400"
+        />
+        <span className="text-forest-400 text-xs pointer-events-none">▼</span>
+      </div>
 
       {open && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl border border-forest-200 shadow-card-hover z-30 overflow-hidden">
-          <div className="p-2 border-b border-forest-100">
-            <div className="relative">
-              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-forest-400" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar..."
-                className="w-full pl-7 pr-3 py-1.5 text-sm bg-sena-50 rounded-lg border border-forest-100 focus:outline-none focus:border-sena-400"
-                autoFocus
-              />
-            </div>
-          </div>
           <ul className="max-h-52 overflow-y-auto py-1">
             {filtered.length === 0 ? (
               <li className="px-3 py-3 text-sm text-forest-400 text-center">Sin resultados</li>

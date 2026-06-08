@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, Filter, MapPin, Wrench } from 'lucide-react';
+import { Package, Filter, MapPin, Wrench, Trash2 } from 'lucide-react';
 import { useFetch } from '@shared/hooks/useFetch';
 import { SearchInput, EmptyState, PageLoader, Paginacion, SelectSearch } from '@shared/components/ui';
 import type { Item, CategoriaItem, EstadoItem } from '@shared/types';
@@ -45,6 +45,10 @@ export default function InventarioPage() {
 
   const handleBusqueda = useCallback((q: string) => { setBusqueda(q); setPagina(1); }, []);
 
+  const hasFiltroActivo = esServicio 
+    ? (estado !== 'danado' || categoriaId !== '') 
+    : (estado !== '' || categoriaId !== '');
+
   const tituloRol: Record<string, string> = {
     coordinador: 'Inventario de mis naves',
     encargado: 'Inventario de mi ambiente',
@@ -70,7 +74,7 @@ export default function InventarioPage() {
           <SearchInput value={busqueda} onChange={handleBusqueda} placeholder="Buscar por nombre o N° inventario..." className="flex-1 min-w-48" />
           <button onClick={() => setFiltrosOpen(v => !v)} className={`btn-secondary flex items-center gap-2 ${filtrosOpen ? 'ring-2 ring-sena-300' : ''}`}>
             <Filter size={15} /> Filtros
-            {(estado || categoriaId) && <span className="w-2 h-2 rounded-full bg-sena-500" />}
+            {hasFiltroActivo && <span className="w-2 h-2 rounded-full bg-sena-500" />}
           </button>
         </div>
         {filtrosOpen && (
@@ -91,9 +95,13 @@ export default function InventarioPage() {
               placeholder="Categoría"
               className="w-48"
             />
-            {(estado || categoriaId) && (
-              <button onClick={() => { setEstado(esServicio ? 'danado' : ''); setCategoriaId(''); setPagina(1); }} className="text-sm text-forest-500 hover:text-red-500 transition-colors">
-                Limpiar
+            {hasFiltroActivo && (
+              <button 
+                title="Limpiar filtros"
+                onClick={() => { setEstado(esServicio ? 'danado' : ''); setCategoriaId(''); setPagina(1); }} 
+                className="text-forest-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg cursor-pointer flex items-center justify-center"
+              >
+                <Trash2 size={18} />
               </button>
             )}
           </div>
