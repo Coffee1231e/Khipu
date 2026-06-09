@@ -1,5 +1,5 @@
 import { Modal } from '@shared/components/ui';
-import { Package, MapPin, RefreshCw, Wrench } from 'lucide-react';
+import { Package, MapPin, RefreshCw, Wrench, CheckCircle2 } from 'lucide-react';
 import type { Item } from '@shared/types';
 import { ESTADO_ITEM_LABELS, ESTADO_ITEM_COLORS } from '@shared/types';
 import { useAuth } from '@features/auth/context/AuthContext';
@@ -12,9 +12,11 @@ interface Props {
   onSolicitarTraslado: () => void;
   onSolicitarMantenimiento: () => void;
   onDevolver: () => void;
+  onReclamarMantenimiento?: () => void;
+  onAprobarMantenimiento?: (solicitudId: string) => void;
 }
 
-export function ItemPreviewModal({ item, isOpen, onClose, onSolicitarTraslado, onSolicitarMantenimiento, onDevolver }: Props) {
+export function ItemPreviewModal({ item, isOpen, onClose, onSolicitarTraslado, onSolicitarMantenimiento, onDevolver, onReclamarMantenimiento, onAprobarMantenimiento }: Props) {
   const { user } = useAuth();
   
   // We need to fetch full item details if the list doesn't have it all, but for now we assume we have enough or we fetch it.
@@ -26,12 +28,15 @@ export function ItemPreviewModal({ item, isOpen, onClose, onSolicitarTraslado, o
 
   const esInstructor = user?.rol === 'instructor';
   const esEncargado = user?.rol === 'encargado';
-  const puedeAccionar = esInstructor || esEncargado;
+  const esServicio = user?.rol === 'servicio';
+  const puedeAccionar = esInstructor || esEncargado || esServicio;
   
   const estaPrestado = Boolean(displayItem.ambienteOrigenOriginalId);
   // Un ítem "prestado" a mi ambiente. (This means I am the destination of a previous transfer).
   // Ideally, only the current environment's users can return it.
   const puedeDevolver = estaPrestado && (esInstructor || esEncargado) && (user?.ambienteIds?.includes(displayItem.ambienteId ?? ''));
+
+  const solicitudMantenimientoActiva = displayItem.solicitudesMantenimiento?.[0];
 
   return (
     <Modal open={isOpen} onClose={onClose} title="Detalles del Ítem" size="md">
@@ -89,21 +94,60 @@ export function ItemPreviewModal({ item, isOpen, onClose, onSolicitarTraslado, o
 
             {puedeAccionar && (
               <div className="pt-2 grid grid-cols-1 gap-2">
-                <button 
-                  onClick={() => { onClose(); onSolicitarTraslado(); }}
-                  className="btn-secondary w-full justify-center"
-                >
-                  <RefreshCw size={18} />
-                  Solicitar Traslado
-                </button>
-                
-                {esEncargado && displayItem.estado !== 'danado' && displayItem.estado !== 'en_mantenimiento' && (
+                {(esInstructor || esEncargado) && displayItem.estado !== 'danado' && displayItem.estado !== 'en_mantenimiento' && (
                   <button 
-                    onClick={() => { onClose(); onSolicitarMantenimiento(); }}
+                    onClick={() => { onClose(); onSolicitarTraslado(); }}
                     className="btn-secondary w-full justify-center"
                   >
+                    <RefreshCw size={18} />
+                    {esEncargado ? 'Hacer Traslado' : 'Solicitar Traslado'}
+                  </button>
+                )}
+                
+                
+                {esEncargado && displayItem.estado === 'danado' && (
+                  <>
+                    {!solicitudMantenimientoActiva && (
+                      <button 
+                        onClick={() => { onClose(); onSolicitarMantenimiento(); }}
+                        className="btn-secondary w-full justify-center"
+                      >
+                        <Wrench size={18} />
+                        Solicitar Mantenimiento
+                      </button>
+                    )}
+                    
+                    {solicitudMantenimientoActiva && !solicitudMantenimientoActiva.servicioId && (
+                      <div className="w-full text-center text-sm font-medium text-amber-600 bg-amber-50 rounded-lg p-2 border border-amber-100">
+                        Mantenimiento Solicitado (Esperando Técnico)
+                      </div>
+                    )}
+
+                    {solicitudMantenimientoActiva?.servicioId && !solicitudMantenimientoActiva.aprobadoPorEncargado && (
+                      <button 
+                        onClick={() => { onClose(); onAprobarMantenimiento?.(solicitudMantenimientoActiva.id); }}
+                        className="btn-primary w-full justify-center bg-green-500 hover:bg-green-600 ring-green-500/50"
+                      >
+                        <CheckCircle2 size={18} />
+                        Aceptar Mantenimiento
+                      </button>
+                    )}
+
+                    {solicitudMantenimientoActiva?.aprobadoPorEncargado && (
+                      <div className="w-full text-center text-sm font-medium text-green-600 bg-green-50 rounded-lg p-2 border border-green-100">
+                        Mantenimiento Aprobado (Técnico en camino)
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {esServicio && displayItem.estado === 'danado' && !solicitudMantenimientoActiva?.servicioId && (
+                  <button 
+                    onClick={() => { onClose(); onReclamarMantenimiento?.(); }}
+                    className="btn-primary w-full justify-center bg-amber-500 hover:bg-amber-600 ring-amber-500/50"
+                  >
                     <Wrench size={18} />
-                    Solicitar Mantenimiento
+                    Hacer Mantenimiento
                   </button>
                 )}
 

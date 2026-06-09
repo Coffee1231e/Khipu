@@ -83,6 +83,12 @@ export const bodegaController = {
               ambienteDestino: { select: { nombre: true } },
             },
           },
+          solicitudesMantenimiento: {
+            where: { estado: 'pendiente' },
+            orderBy: { creadoEn: 'desc' },
+            take: 1,
+            include: { solicitante: { select: { nombre: true, id: true } } },
+          },
         },
       });
       if (!item) throw new NotFoundError('Ítem');

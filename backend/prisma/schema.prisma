@@ -344,6 +344,8 @@ model SolicitudMantenimiento {
   observaciones    String?         @db.Text
   creadoEn         DateTime        @default(now()) @map("creado_en")
   aceptadoEn       DateTime?       @map("aceptado_en")
+  aprobadoPorEncargado Boolean     @default(false) @map("aprobado_por_encargado")
+  iniciadoEn       DateTime?       @map("iniciado_en")
   completadoEn     DateTime?       @map("completado_en")
   resultadoFinal   String?         @map("resultado_final") @db.VarChar(20)
 

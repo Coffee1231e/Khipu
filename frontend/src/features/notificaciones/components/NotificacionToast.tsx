@@ -2,22 +2,27 @@
 //  features/notificaciones/components/NotificacionToast.tsx
 // ============================================================
 
-import { X } from 'lucide-react';
+import { 
+  X, RefreshCw, CheckCircle2, XCircle, ClipboardCheck, 
+  AlertTriangle, Wrench, Trash2, UserPlus, Key, Bell
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { Toast } from 'react-hot-toast';
 import toast from 'react-hot-toast';
 import type { Notificacion } from '@shared/types';
+import React from 'react';
 
-const TIPO_ICONS: Record<string, string> = {
-  traslado_solicitado: '🔄',
-  traslado_aceptado: '✅',
-  traslado_rechazado: '❌',
-  verificacion_enviada: '📋',
-  item_danado_reportado: '⚠️',
-  item_en_mantenimiento: '🔧',
-  item_devuelto: '✅',
-  item_baja: '🗑️',
-  cuenta_creada: '👤',
+const TIPO_ICONS: Record<string, React.ReactNode> = {
+  traslado_solicitado: <RefreshCw size={18} className="text-blue-500" />,
+  traslado_aceptado: <CheckCircle2 size={18} className="text-sena-500" />,
+  traslado_rechazado: <XCircle size={18} className="text-red-500" />,
+  verificacion_enviada: <ClipboardCheck size={18} className="text-forest-500" />,
+  item_danado_reportado: <AlertTriangle size={18} className="text-red-500" />,
+  item_en_mantenimiento: <Wrench size={18} className="text-amber-500" />,
+  item_devuelto: <CheckCircle2 size={18} className="text-sena-500" />,
+  item_baja: <Trash2 size={18} className="text-forest-500" />,
+  cuenta_creada: <UserPlus size={18} className="text-blue-500" />,
+  contrasena_cambiada: <Key size={18} className="text-amber-500" />,
 };
 
 interface Props {
@@ -27,7 +32,7 @@ interface Props {
 
 export function NotificacionToast({ notificacion, toastInstance }: Props) {
   const navigate = useNavigate();
-  const icono = TIPO_ICONS[notificacion.tipo] ?? '🔔';
+  const icono = TIPO_ICONS[notificacion.tipo] ?? <Bell size={18} className="text-forest-400" />;
 
   const handleClick = () => {
     toast.dismiss(toastInstance.id);

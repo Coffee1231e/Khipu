@@ -100,6 +100,25 @@ export default function InventarioPage() {
     } catch (e: any) { toast.error(e?.mensajeUI || 'Error al solicitar mantenimiento'); }
   };
 
+  const handleReclamarMantenimiento = async () => {
+    if (!itemSeleccionado) return;
+    try {
+      await api.post(`/mantenimiento/${itemSeleccionado.id}/reclamar`);
+      toast.success('Mantenimiento reclamado correctamente. Se notificó al encargado.');
+      setModalPreviewOpen(false);
+      _refetch();
+    } catch (e: any) { toast.error(e?.mensajeUI || 'Error al reclamar mantenimiento'); }
+  };
+
+  const handleAprobarMantenimiento = async (solicitudId: string) => {
+    try {
+      await api.post(`/mantenimiento/${solicitudId}/aprobar`);
+      toast.success('Mantenimiento aprobado. El técnico puede proceder.');
+      setModalPreviewOpen(false);
+      _refetch();
+    } catch (e: any) { toast.error(e?.mensajeUI || 'Error al aprobar mantenimiento'); }
+  };
+
   const handleDevolver = async () => {
     if (!itemSeleccionado) return;
     try {
@@ -250,6 +269,8 @@ export default function InventarioPage() {
         onClose={() => setModalPreviewOpen(false)}
         onSolicitarTraslado={() => setModalTrasladoOpen(true)}
         onSolicitarMantenimiento={() => setModalMantenimientoOpen(true)}
+        onReclamarMantenimiento={handleReclamarMantenimiento}
+        onAprobarMantenimiento={handleAprobarMantenimiento}
         onDevolver={handleDevolver}
       />
       <SolicitarTrasladoModal

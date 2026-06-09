@@ -6,6 +6,7 @@ import { Request, Response, NextFunction } from 'express';
 import { type Rol } from '@prisma/client';
 import { prisma } from '../../infrastructure/database/prisma.client';
 import { registrarAudit } from '../../infrastructure/database/auditLog.service';
+import { subirImagenItem } from '../../infrastructure/storage/storage.service';
 import {
   notificarTrasladoSolicitado,
   crearNotificacion,
@@ -415,16 +416,14 @@ export const mantenimientoController = {
         data: { itemId: Number(itemId), solicitanteId: req.usuario.id, descripcionFalla, observaciones },
       });
 
-      await prisma.item.update({ where: { id: Number(itemId) }, data: { estado: 'en_mantenimiento' } });
-
       const servicio = await prisma.usuario.findMany({ where: { rol: 'servicio', activo: true }, select: { id: true } });
       for (const s of servicio) {
         await crearNotificacion({
           usuarioId: s.id,
           tipo: TipoNotificacion.item_en_mantenimiento,
-          titulo: 'Ítem enviado a mantenimiento',
+          titulo: 'Ítem reportado para mantenimiento',
           mensaje: `El ítem "${item.nombre}" (${item.numeroInventario}) requiere mantenimiento. Falla: ${descripcionFalla}`,
-          urlDestino: `/mantenimiento/${solicitud.id}`,
+          urlDestino: `/mantenimiento`,
         });
       }
 
@@ -453,6 +452,100 @@ export const mantenimientoController = {
     } catch (err) { next(err); }
   },
 
+  async reclamar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = String(req.params['id']);
+      // Encontrar la solicitud activa más reciente para el item, o buscar por ID de item si mandamos el itemId en la URL
+      // Espera, el endpoint es /mantenimiento/:id/reclamar donde :id es el itemId
+      const itemId = Number(id);
+      const solicitud = await prisma.solicitudMantenimiento.findFirst({
+        where: { itemId, estado: 'pendiente' },
+        orderBy: { creadoEn: 'desc' },
+        include: { solicitante: true, item: true },
+      });
+
+      if (!solicitud) throw new NotFoundError('Solicitud de mantenimiento activa');
+      if (solicitud.servicioId) throw new ForbiddenError('Esta solicitud ya ha sido reclamada por alguien más.');
+
+      // Actualizar la solicitud con el ID de quien la reclamó y la fecha (no cambia estado hasta que se resuelva)
+      await prisma.solicitudMantenimiento.update({
+        where: { id: solicitud.id },
+        data: { servicioId: req.usuario.id, aceptadoEn: new Date() },
+      });
+
+      // Notificar al encargado
+      await crearNotificacion({
+        usuarioId: solicitud.solicitanteId,
+        tipo: TipoNotificacion.servicio_solicitado, // Usando un enum genérico
+        titulo: 'Mantenimiento en curso',
+        mensaje: `Tu solicitud de mantenimiento para "${solicitud.item.nombre}" ha sido aceptada por ${req.usuario.nombre}. Cuando tu ítem esté listo o se vaya a dar de baja, se te informará.`,
+      });
+
+      res.json({ ok: true, mensaje: 'Solicitud reclamada exitosamente. Esperando aprobación.' });
+    } catch (err) { next(err); }
+  },
+
+  async aprobar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = String(req.params['id']);
+      const itemId = Number(id);
+      const solicitud = await prisma.solicitudMantenimiento.findFirst({
+        where: { itemId, estado: 'pendiente' },
+        orderBy: { creadoEn: 'desc' },
+        include: { solicitante: true, item: true },
+      });
+
+      if (!solicitud) throw new NotFoundError('Solicitud de mantenimiento activa');
+      if (!solicitud.servicioId) throw new ForbiddenError('Nadie ha reclamado esta solicitud todavía.');
+
+      await prisma.solicitudMantenimiento.update({
+        where: { id: solicitud.id },
+        data: { aprobadoPorEncargado: true },
+      });
+
+      await crearNotificacion({
+        usuarioId: solicitud.servicioId,
+        tipo: TipoNotificacion.servicio_solicitado, // enum reutilizado
+        titulo: 'Mantenimiento aprobado',
+        mensaje: `El encargado ha aprobado que vayas por el ítem "${solicitud.item.nombre}". Por favor, recógelo e inicia el mantenimiento en el sistema.`,
+      });
+
+      res.json({ ok: true, mensaje: 'Has aprobado que el técnico vaya por el ítem.' });
+    } catch (err) { next(err); }
+  },
+
+  async iniciar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = String(req.params['id']); // es la solicitudId en este caso o itemId? Usaremos solicitud.id directamente
+      // Wait, MantenimientoPage tiene el solicitud.id, usémoslo.
+      const solicitud = await prisma.solicitudMantenimiento.findUnique({
+        where: { id },
+        include: { item: true },
+      });
+
+      if (!solicitud) throw new NotFoundError('Solicitud de mantenimiento');
+      if (!solicitud.aprobadoPorEncargado) throw new ForbiddenError('El encargado aún no ha aprobado esta solicitud.');
+      if (solicitud.iniciadoEn) throw new ForbiddenError('El mantenimiento ya fue iniciado.');
+
+      if (!req.file) throw new ForbiddenError('Es obligatorio adjuntar una foto del estado inicial del ítem.');
+
+      const url = await subirImagenItem(solicitud.itemId, req.file.buffer, req.file.mimetype);
+
+      await prisma.$transaction([
+        prisma.solicitudMantenimiento.update({
+          where: { id },
+          data: { iniciadoEn: new Date(), observaciones: req.body.observaciones ? `${solicitud.observaciones || ''}\nIngreso: ${req.body.observaciones}` : solicitud.observaciones },
+        }),
+        prisma.item.update({
+          where: { id: solicitud.itemId },
+          data: { estado: 'en_mantenimiento', imagenUrl: url },
+        }),
+      ]);
+
+      res.json({ ok: true, mensaje: 'Mantenimiento iniciado correctamente.' });
+    } catch (err) { next(err); }
+  },
+
   async resolver(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       // Express v5: castear req.params
@@ -471,13 +564,20 @@ export const mantenimientoController = {
       if (!solicitud) throw new NotFoundError('Solicitud de mantenimiento');
 
       const nuevoEstado = resultado === 'devuelto' ? 'activo' : 'baja';
+      let updateData: any = { estado: nuevoEstado };
+
+      if (resultado === 'devuelto') {
+        if (!req.file) throw new ForbiddenError('Es obligatorio subir una foto del ítem reparado.');
+        const url = await subirImagenItem(solicitud.itemId, req.file.buffer, req.file.mimetype);
+        updateData.imagenUrl = url;
+      }
 
       await prisma.$transaction([
         prisma.solicitudMantenimiento.update({
           where: { id },
           data: { estado: 'aceptado', completadoEn: new Date(), resultadoFinal: resultado, observaciones },
         }),
-        prisma.item.update({ where: { id: solicitud.itemId }, data: { estado: nuevoEstado } }),
+        prisma.item.update({ where: { id: solicitud.itemId }, data: updateData }),
         prisma.movimiento.create({
           data: {
             itemId: solicitud.itemId,

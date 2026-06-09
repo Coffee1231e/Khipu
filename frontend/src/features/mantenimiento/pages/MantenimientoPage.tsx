@@ -7,6 +7,8 @@ import toast from 'react-hot-toast';
 import type { SolicitudMantenimiento } from '@shared/types';
 import { useAuth } from '@features/auth/context/AuthContext';
 import { formatFecha } from '@features/notificaciones/utils/formatDate';
+import { IniciarMantenimientoModal } from './components/IniciarMantenimientoModal';
+import { Camera, Image as ImageIcon } from 'lucide-react';
 
 const ESTADO_COLORS = { pendiente: 'badge-yellow', aceptado: 'badge-green', rechazado: 'badge-red' };
 const ESTADO_LABELS = { pendiente: 'Pendiente', aceptado: 'Completado', rechazado: 'Rechazado' };
@@ -15,8 +17,10 @@ export default function MantenimientoPage() {
   const { esServicio, esAdmin } = useAuth();
   const [filtro, setFiltro] = useState('');
   const [modalResolver, setModalResolver] = useState<SolicitudMantenimiento | null>(null);
+  const [modalIniciar, setModalIniciar] = useState<SolicitudMantenimiento | null>(null);
   const [resultado, setResultado] = useState<'devuelto' | 'baja'>('devuelto');
   const [observaciones, setObservaciones] = useState('');
+  const [fotoResolver, setFotoResolver] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   const params = filtro ? `?estado=${filtro}` : '';
@@ -27,14 +31,50 @@ export default function MantenimientoPage() {
 
   const handleResolver = async () => {
     if (!modalResolver) return;
+    if (resultado === 'devuelto' && !fotoResolver) {
+      toast.error('Es obligatorio subir una foto del ítem reparado.');
+      return;
+    }
     setLoading(true);
     try {
-      await api.patch(`/mantenimiento/${modalResolver.id}/resolver`, { resultado, observaciones });
+      const fd = new FormData();
+      fd.append('resultado', resultado);
+      if (observaciones) fd.append('observaciones', observaciones);
+      if (resultado === 'devuelto' && fotoResolver) fd.append('imagen', fotoResolver);
+
+      await api.patch(`/mantenimiento/${modalResolver.id}/resolver`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success(resultado === 'devuelto' ? 'Ítem devuelto al ambiente.' : 'Ítem dado de baja.');
       setModalResolver(null);
       setObservaciones('');
+      setFotoResolver(null);
       refetch();
     } catch (e: unknown) { toast.error((e as { mensajeUI?: string }).mensajeUI ?? 'Error'); }
+    finally { setLoading(false); }
+  };
+
+  const handleIniciar = async (obs: string, foto: File) => {
+    if (!modalIniciar) return;
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      if (obs) fd.append('observaciones', obs);
+      fd.append('imagen', foto);
+
+      await api.post(`/mantenimiento/${modalIniciar.id}/iniciar`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      toast.success('Mantenimiento iniciado. El ítem ahora figura en mantenimiento.');
+      setModalIniciar(null);
+      refetch();
+    } catch (e: unknown) { toast.error((e as { mensajeUI?: string }).mensajeUI ?? 'Error al iniciar'); }
+    finally { setLoading(false); }
+  };
+
+  const handleReclamar = async (itemId: number) => {
+    setLoading(true);
+    try {
+      await api.post(`/mantenimiento/${itemId}/reclamar`);
+      toast.success('Has reclamado esta solicitud. Se notificó al encargado.');
+      refetch();
+    } catch (e: unknown) { toast.error((e as { mensajeUI?: string }).mensajeUI ?? 'Error al reclamar'); }
     finally { setLoading(false); }
   };
 
@@ -102,17 +142,49 @@ export default function MantenimientoPage() {
                         {s.completadoEn && ` · ${formatFecha(s.completadoEn)}`}
                       </p>
                     )}
+                    {s.estado === 'pendiente' && s.servicioId && (
+                      <p className="text-xs text-amber-600 mt-1 font-medium">
+                        {s.aprobadoPorEncargado 
+                          ? (s.iniciadoEn ? 'Mantenimiento en curso' : 'Aprobado (Esperando ingreso)') 
+                          : 'Reclamado (Esperando aprobación del encargado)'}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {/* Acción para servicio o admin */}
-                {(esServicio || esAdmin) && s.estado === 'pendiente' && (
-                  <button
-                    onClick={() => { setModalResolver(s); setResultado('devuelto'); setObservaciones(''); }}
-                    className="btn-primary flex items-center gap-2 text-sm"
-                  >
-                    <CheckCircle2 size={14} /> Resolver
-                  </button>
+                {s.estado === 'pendiente' && (
+                  <div className="flex gap-2">
+                    {esServicio && !s.servicioId && (
+                      <button
+                        onClick={() => handleReclamar(s.itemId)}
+                        disabled={loading}
+                        className="btn-secondary text-amber-600 hover:text-amber-700 hover:bg-amber-50 text-sm disabled:opacity-50"
+                      >
+                        Reclamar
+                      </button>
+                    )}
+                    {(esAdmin || (esServicio && s.servicioId === useAuth().user?.id)) && (
+                      <>
+                        {s.aprobadoPorEncargado && !s.iniciadoEn && (
+                          <button
+                            onClick={() => setModalIniciar(s)}
+                            className="btn-primary bg-amber-500 hover:bg-amber-600 ring-amber-500/50 flex items-center gap-2 text-sm"
+                          >
+                            <Wrench size={14} /> Iniciar Mantenimiento
+                          </button>
+                        )}
+                        {s.iniciadoEn && (
+                          <button
+                            onClick={() => { setModalResolver(s); setResultado('devuelto'); setObservaciones(''); setFotoResolver(null); }}
+                            className="btn-primary flex items-center gap-2 text-sm"
+                          >
+                            <CheckCircle2 size={14} /> Resolver
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -171,6 +243,24 @@ export default function MantenimientoPage() {
               />
             </div>
 
+            {resultado === 'devuelto' && (
+              <div>
+                <label className="label mb-2">Foto del ítem reparado * (Obligatorio)</label>
+                <div className="flex gap-2">
+                  <label className="btn-secondary flex-1 justify-center flex items-center gap-2 cursor-pointer mb-0">
+                    <ImageIcon size={16} /> {fotoResolver ? 'Cambiar Foto' : 'Subir Foto'}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={e => e.target.files?.[0] && setFotoResolver(e.target.files[0])} 
+                      className="hidden" 
+                    />
+                  </label>
+                </div>
+                {fotoResolver && <p className="text-xs text-green-600 mt-2">Foto cargada: {fotoResolver.name}</p>}
+              </div>
+            )}
+
             {resultado === 'baja' && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600">
                 El ítem será dado de baja permanentemente y no podrá ser reasignado.
@@ -179,6 +269,15 @@ export default function MantenimientoPage() {
           </div>
         )}
       </Modal>
+
+      {/* Modal Iniciar Mantenimiento */}
+      <IniciarMantenimientoModal
+        solicitud={modalIniciar}
+        isOpen={!!modalIniciar}
+        onClose={() => setModalIniciar(null)}
+        onSubmit={handleIniciar}
+        loading={loading}
+      />
     </div>
   );
 }

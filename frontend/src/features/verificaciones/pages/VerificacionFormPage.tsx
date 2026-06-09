@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '@lib/api';
 import { useFetch } from '@shared/hooks/useFetch';
 import { PageLoader, SelectSearch } from '@shared/components/ui';
-import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Send, Package } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, XCircle, AlertTriangle, Send, Package, LogIn, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Item, VerificacionInventario } from '@shared/types';
 import { useAuth } from '@features/auth/context/AuthContext';
@@ -22,7 +22,7 @@ interface DetalleForm {
 const ESTADO_CONFIG = {
   presente: { label: 'Presente', icon: <CheckCircle2 size={16} />, color: 'bg-sena-100 text-sena-600 border-sena-300' },
   ausente:  { label: 'Ausente',  icon: <XCircle size={16} />,      color: 'bg-red-50 text-red-600 border-red-300' },
-  danado:   { label: 'Dañado',   icon: <AlertTriangle size={16} />, color: 'bg-amber-50 text-amber-600 border-amber-300' },
+  danado:   { label: 'Dañado',   icon: <AlertTriangle size={16} />, color: 'bg-red-50 text-red-600 border-red-300' },
 };
 
 export default function VerificacionFormPage() {
@@ -108,7 +108,7 @@ export default function VerificacionFormPage() {
     const COLORS = {
       presente: 'bg-sena-100 text-sena-700',
       ausente: 'bg-red-50 text-red-600',
-      danado: 'bg-amber-50 text-amber-700',
+      danado: 'bg-red-50 text-red-700',
     };
 
     return (
@@ -156,8 +156,8 @@ export default function VerificacionFormPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`badge ${COLORS[d.estado as keyof typeof COLORS]} text-xs capitalize`}>
-                      {d.estado}
+                    <span className={`badge ${COLORS[d.estado as keyof typeof COLORS]} text-xs`}>
+                      {ESTADO_CONFIG[d.estado as keyof typeof ESTADO_CONFIG]?.label || d.estado}
                     </span>
                   </td>
                 </tr>
@@ -234,7 +234,10 @@ export default function VerificacionFormPage() {
                     : 'border-forest-200 text-forest-500 hover:border-forest-300'
                 }`}
               >
-                {t === 'entrada' ? '✅ Entrada' : '🚪 Salida'}
+                <div className="flex items-center justify-center gap-1.5">
+                  {t === 'entrada' ? <LogIn size={16} /> : <LogOut size={16} />}
+                  <span>{t === 'entrada' ? 'Entrada' : 'Salida'}</span>
+                </div>
               </button>
             ))}
           </div>
@@ -322,7 +325,7 @@ export default function VerificacionFormPage() {
         <div className="card p-4 flex items-center justify-between gap-4 sticky bottom-4">
           <div>
             {todosVerificados
-              ? <p className="text-sena-700 text-sm font-medium">✅ Todos los ítems verificados</p>
+              ? <p className="text-sena-700 text-sm font-medium flex items-center gap-1.5"><CheckCircle2 size={16} /> Todos los ítems verificados</p>
               : <p className="text-amber-600 text-sm">{detalles.length - verificadosCount} ítem(s) pendientes</p>
             }
           </div>

@@ -112,6 +112,7 @@ export interface Item {
   asignadoEn?: string;
   movimientos?: Movimiento[];
   creadoPor?: { id: string; nombre: string; rol: Rol };
+  solicitudesMantenimiento?: SolicitudMantenimiento[];
 }
 
 export interface Movimiento {
@@ -175,10 +176,14 @@ export interface SolicitudMantenimiento {
   item?: { id: number; nombre: string; numeroInventario: string; imagenUrl?: string; nave?: { nombre: string }; ambiente?: { nombre: string } };
   solicitanteId: string;
   solicitante?: { nombre: string; rol: Rol };
+  servicioId?: string | null;
   estado: EstadoSolicitud;
   descripcionFalla: string;
   observaciones?: string;
   creadoEn: string;
+  aceptadoEn?: string;
+  aprobadoPorEncargado?: boolean;
+  iniciadoEn?: string;
   completadoEn?: string;
   resultadoFinal?: string;
 }

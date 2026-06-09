@@ -43,7 +43,6 @@ import {
   resolverSolicitudTrasladoSchema,
   crearVerificacionSchema,
   crearSolicitudMantenimientoSchema,
-  resolverMantenimientoSchema,
   editarConfiguracionSchema,
   verificar2FASchema,
   activar2FASchema,
@@ -119,7 +118,10 @@ router.patch('/verificaciones/:id/confirmar-danos', authenticate, verificaciones
 // ─── Mantenimiento ────────────────────────────────────────────
 router.get('/mantenimiento',              authenticate, authorize(ACCIONES.MANTENIMIENTO_VER),       mantenimientoController.listar);
 router.post('/mantenimiento',             authenticate, authorize(ACCIONES.MANTENIMIENTO_SOLICITAR), validate(crearSolicitudMantenimientoSchema), mantenimientoController.solicitarMantenimiento);
-router.patch('/mantenimiento/:id/resolver', authenticate, authorize(ACCIONES.MANTENIMIENTO_GESTIONAR), validate(resolverMantenimientoSchema), mantenimientoController.resolver);
+router.post('/mantenimiento/:id/reclamar', authenticate, authorize(ACCIONES.MANTENIMIENTO_GESTIONAR), mantenimientoController.reclamar);
+router.post('/mantenimiento/:id/aprobar', authenticate, authorize(ACCIONES.MANTENIMIENTO_GESTIONAR), mantenimientoController.aprobar);
+router.post('/mantenimiento/:id/iniciar', authenticate, authorize(ACCIONES.MANTENIMIENTO_GESTIONAR), uploadRateLimit, uploadImagen, mantenimientoController.iniciar);
+router.patch('/mantenimiento/:id/resolver', authenticate, authorize(ACCIONES.MANTENIMIENTO_GESTIONAR), uploadRateLimit, uploadImagen, mantenimientoController.resolver);
 
 // ─── Logs ────────────────────────────────────────────────────
 router.get('/logs', authenticate, authorize(ACCIONES.LOGS_VER), validate(filtrosLogsSchema, 'query'), logsController.listar);
