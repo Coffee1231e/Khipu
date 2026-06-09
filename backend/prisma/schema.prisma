@@ -358,12 +358,13 @@ model SolicitudMantenimiento {
 // ─────────────────────────────────────────────────────────────
 
 model VerificacionInventario {
-  id            String   @id @default(uuid())
-  usuarioId     String   @map("usuario_id")
-  ambienteId    String   @map("ambiente_id")
-  tipo          String   @db.VarChar(20)
-  observaciones String?  @db.Text
-  creadoEn      DateTime @default(now()) @map("creado_en")
+  id              String   @id @default(uuid())
+  usuarioId       String   @map("usuario_id")
+  ambienteId      String   @map("ambiente_id")
+  tipo            String   @db.VarChar(20)
+  observaciones   String?  @db.Text
+  danosReportados Boolean  @default(false) @map("danos_reportados")
+  creadoEn        DateTime @default(now()) @map("creado_en")
 
   usuario  Usuario               @relation(fields: [usuarioId], references: [id])
   detalles DetalleVerificacion[]

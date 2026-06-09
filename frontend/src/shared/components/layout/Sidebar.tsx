@@ -8,9 +8,10 @@ import {
   LayoutDashboard, Warehouse, ArrowLeftRight, ClipboardList,
   Wrench, Users, Map, Building2, BookOpen, Settings,
   FileText, Tags, LogOut, ChevronRight, User,
-  ChevronsUpDown, ChevronsDownUp
+  ChevronsUpDown, ChevronsDownUp, Bell
 } from 'lucide-react';
 import { useAuth } from '@features/auth/context/AuthContext';
+import { useNotificaciones } from '@features/notificaciones/context/NotificacionesContext';
 import type { Rol } from '@shared/types';
 
 interface NavItem {
@@ -33,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/fichas', icon: <BookOpen size={18} />, label: 'Fichas', roles: ['administrador'] },
   { to: '/usuarios', icon: <Users size={18} />, label: 'Usuarios', roles: ['administrador'] },
   { to: '/logs', icon: <FileText size={18} />, label: 'Registros', roles: ['administrador'] },
+  { to: '/notificaciones', icon: <Bell size={18} />, label: 'Notificaciones', roles: ['administrador', 'almacen', 'coordinador', 'encargado', 'instructor', 'servicio'] },
   // Configuración (límites de cuentas) solo para admin
   { to: '/configuracion', icon: <Settings size={18} />, label: 'Configuración', roles: ['administrador'] },
   // Mi Perfil para todos los roles
@@ -58,6 +60,7 @@ interface Props {
 
 export function Sidebar({ mobileOpen, onClose }: Props) {
   const { user, logout } = useAuth();
+  const { totalNoLeidas } = useNotificaciones();
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
@@ -96,7 +99,10 @@ export function Sidebar({ mobileOpen, onClose }: Props) {
             >
               {item.icon}
               <span className="flex-1">{item.label}</span>
-              {location.pathname.startsWith(item.to) && (
+              {item.to === '/notificaciones' && totalNoLeidas > 0 && (
+                <span className="w-2.5 h-2.5 bg-green-400 rounded-full shadow-[0_0_8px_rgba(74,222,128,0.5)]" title={`${totalNoLeidas} no leídas`}></span>
+              )}
+              {location.pathname.startsWith(item.to) && item.to !== '/notificaciones' && (
                 <ChevronRight size={14} className="opacity-60" />
               )}
             </NavLink>

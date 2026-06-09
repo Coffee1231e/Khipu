@@ -165,6 +165,47 @@ export default function VerificacionFormPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Sección de Confirmación de Daños */}
+        {(user?.rol === 'encargado' || user?.rol === 'administrador') && 
+         !ver.danosReportados && 
+         (ver.detalles ?? []).some(d => d.estado === 'danado') && (
+          <div className="card bg-amber-50/50 border-amber-200 p-5 mt-6">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+                <AlertTriangle size={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-amber-900 text-base">Ítems dañados detectados</h3>
+                <p className="text-sm text-amber-700 mt-1">
+                  Se han encontrado {(ver.detalles ?? []).filter(d => d.estado === 'danado').length} ítem(s) dañados en esta verificación. 
+                  Por favor confirme para reportarlos oficialmente como dañados en el inventario y notificar al equipo de Servicio.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (confirm('¿Estás seguro de reportar estos ítems como dañados? Esta acción es irreversible.')) {
+                      setLoading(true);
+                      try {
+                        await api.patch(`/verificaciones/${ver.id}/confirmar-danos`);
+                        toast.success('Daños reportados y notificados a Servicio');
+                        window.location.reload();
+                      } catch (e: any) {
+                        toast.error(e.mensajeUI || 'Error al confirmar daños');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }
+                  }}
+                  disabled={loading}
+                  className="mt-4 btn-primary bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50 text-sm py-2.5 px-5 flex items-center gap-2"
+                >
+                  {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <AlertTriangle size={16} />}
+                  {loading ? 'Confirmando...' : 'Confirmar y reportar daños'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

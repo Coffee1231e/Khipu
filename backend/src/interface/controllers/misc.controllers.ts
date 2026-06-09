@@ -224,12 +224,15 @@ export const verificacionesController = {
         select: { usuarioId: true },
       });
 
+      const danosCount = detalles.filter((d) => d.estado === 'danado').length;
+      const extraMsg = danosCount > 0 ? ` Se marcaron ${danosCount} ítem(s) como dañados.` : '';
+
       for (const enc of encargados) {
         await crearNotificacion({
           usuarioId: enc.usuarioId,
           tipo: TipoNotificacion.verificacion_enviada,
           titulo: 'Verificación de inventario recibida',
-          mensaje: `${req.usuario.nombre} envió una verificación de ${tipo} del ambiente ${ambiente?.nombre ?? ''}.`,
+          mensaje: `${req.usuario.nombre} envió una verificación de ${tipo} del ambiente ${ambiente?.nombre ?? ''}.${extraMsg}`,
           urlDestino: `/verificaciones/${verificacion.id}`,
         });
       }
@@ -281,6 +284,65 @@ export const verificacionesController = {
       });
       if (!verificacion) throw new NotFoundError('Verificación');
       res.json({ ok: true, verificacion });
+    } catch (err) { next(err); }
+  },
+
+  async confirmarDanos(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = String(req.params['id']);
+      const verificacion = await prisma.verificacionInventario.findUnique({
+        where: { id },
+        include: {
+          detalles: {
+            where: { estado: 'danado' },
+            include: { item: { select: { id: true, nombre: true, numeroInventario: true, ambiente: { select: { nombre: true } }, nave: { select: { nombre: true } } } } }
+          },
+        },
+      });
+
+      if (!verificacion) throw new NotFoundError('Verificación');
+      if (verificacion.danosReportados) throw new ForbiddenError('Los daños de esta verificación ya fueron reportados.');
+      if (verificacion.detalles.length === 0) throw new ForbiddenError('No hay ítems dañados en esta verificación.');
+
+      const itemIds = verificacion.detalles.map((d) => d.itemId);
+
+      await prisma.$transaction([
+        prisma.verificacionInventario.update({
+          where: { id },
+          data: { danosReportados: true }
+        }),
+        prisma.item.updateMany({
+          where: { id: { in: itemIds } },
+          data: { estado: 'danado' }
+        })
+      ]);
+
+      const usuariosServicio = await prisma.usuario.findMany({ where: { rol: 'servicio', activo: true }, select: { id: true } });
+      const servicioIds = usuariosServicio.map((u) => u.id);
+
+      if (servicioIds.length > 0) {
+        const itemsDanadosMetadata = verificacion.detalles.map((d) => ({
+          id: d.item.id,
+          nombre: d.item.nombre,
+          numeroInventario: d.item.numeroInventario,
+          ambiente: d.item.ambiente?.nombre || '',
+          nave: d.item.nave?.nombre || ''
+        }));
+        const ambienteNombre = verificacion.detalles[0]?.item.ambiente?.nombre || '';
+
+        await Promise.all(servicioIds.map(id => 
+          crearNotificacion({
+            usuarioId: id,
+            tipo: TipoNotificacion.item_danado_reportado,
+            titulo: 'Ítems dañados reportados',
+            mensaje: `Se han reportado ${itemIds.length} ítem(s) dañado(s) en el ambiente ${ambienteNombre} por ${req.usuario.nombre}.`,
+            urlDestino: `/notificaciones`,
+            metadatos: { items: itemsDanadosMetadata }
+          })
+        ));
+      }
+
+      res.json({ ok: true, mensaje: 'Daños confirmados y reportados exitosamente.' });
     } catch (err) { next(err); }
   },
 };

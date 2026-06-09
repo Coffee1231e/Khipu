@@ -113,6 +113,7 @@ router.patch('/traslados/:id/resolver', authenticate, validate(resolverSolicitud
 router.get('/verificaciones',     authenticate, authorize(ACCIONES.VERIFICACION_CREAR), verificacionesController.listar);
 router.get('/verificaciones/:id', authenticate, authorize(ACCIONES.VERIFICACION_CREAR), verificacionesController.obtener);
 router.post('/verificaciones',    authenticate, authorize(ACCIONES.VERIFICACION_CREAR), validate(crearVerificacionSchema), verificacionesController.crear);
+router.patch('/verificaciones/:id/confirmar-danos', authenticate, verificacionesController.confirmarDanos);
 
 // ─── Mantenimiento ────────────────────────────────────────────
 router.get('/mantenimiento',              authenticate, authorize(ACCIONES.MANTENIMIENTO_VER),       mantenimientoController.listar);

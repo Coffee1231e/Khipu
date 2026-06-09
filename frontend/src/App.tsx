@@ -27,6 +27,7 @@ const LogsPage = lazy(() => import('./features/logs/pages/LogsPage'));
 const ConfiguracionPage = lazy(() => import('./features/configuracion/pages/ConfiguracionPage'));
 const MiPerfilPage = lazy(() => import('./features/configuracion/pages/MiPerfilPage'));
 const Setup2FAPage = lazy(() => import('./features/configuracion/pages/Setup2FAPage'));
+const NotificacionesPage = lazy(() => import('./features/notificaciones/pages/NotificacionesPage'));
 
 export default function App() {
   return (
@@ -97,8 +98,9 @@ export default function App() {
                   <Route path="/configuracion" element={<ConfiguracionPage />} />
                 </Route>
 
-                {/* Mi Perfil — todos los roles */}
+                {/* Mi Perfil y Notificaciones — todos los roles */}
                 <Route path="/perfil" element={<MiPerfilPage />} />
+                <Route path="/notificaciones" element={<NotificacionesPage />} />
               </Route>
             </Route>
 

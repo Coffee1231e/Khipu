@@ -179,7 +179,17 @@ export function SelectSearch({
           placeholder={placeholder}
           className="w-full bg-transparent focus:outline-none text-sm text-sena-900 placeholder:text-forest-400"
         />
-        <span className="text-forest-400 text-xs pointer-events-none">▼</span>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!disabled) setOpen((prev) => !prev);
+          }}
+          className="text-forest-400 text-xs hover:text-sena-600 transition-colors outline-none cursor-pointer p-1 rounded-md"
+        >
+          ▼
+        </button>
       </div>
 
       {open && (

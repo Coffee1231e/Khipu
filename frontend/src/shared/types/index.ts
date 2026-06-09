@@ -155,6 +155,7 @@ export interface VerificacionInventario {
   ambienteId: string;
   tipo: 'entrada' | 'salida';
   observaciones?: string;
+  danosReportados?: boolean;
   creadoEn: string;
   detalles?: DetalleVerificacion[];
   _count?: { detalles: number };
