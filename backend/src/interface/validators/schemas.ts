@@ -98,6 +98,8 @@ export const cambiarEstadoItemSchema = z.object({
 export const crearSolicitudTrasladoSchema = z.object({
   itemId: z.number().int().positive(),
   ambienteDestinoId: uuid,
+  usuarioDestinoId: uuid.optional(),
+  esDevolucion: z.boolean().optional().default(false),
   observaciones: z.string().max(500).trim().optional(),
 });
 

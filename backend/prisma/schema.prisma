@@ -249,6 +249,7 @@ model Item {
   observaciones    String?    @db.Text
   imagenUrl        String?    @map("imagen_url") @db.Text
   activo           Boolean    @default(true)
+  ambienteOrigenOriginalId String? @map("ambiente_origen_original_id")
   creadoEn         DateTime   @default(now()) @map("creado_en")
   actualizadoEn    DateTime   @updatedAt @map("actualizado_en")
   asignadoEn       DateTime?  @map("asignado_en")
@@ -312,6 +313,8 @@ model SolicitudTraslado {
   observaciones     String?         @db.Text
   motivoRechazo     String?         @map("motivo_rechazo") @db.Text
   esInterNave       Boolean         @default(false) @map("es_inter_nave")
+  usuarioDestinoId  String?         @map("usuario_destino_id")
+  esDevolucion      Boolean         @default(false) @map("es_devolucion")
   creadoEn          DateTime        @default(now()) @map("creado_en")
   resolvedoEn       DateTime?       @map("resuelto_en")
 

@@ -106,6 +106,7 @@ export interface Item {
   activo: boolean;
   observaciones?: string;
   imagenUrl?: string;
+  ambienteOrigenOriginalId?: string;
   creadoEn: string;
   actualizadoEn: string;
   asignadoEn?: string;

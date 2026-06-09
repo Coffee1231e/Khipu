@@ -3,15 +3,21 @@
 // ============================================================
 
 import { useNavigate } from 'react-router-dom';
-import { Bell, CheckCheck, Inbox } from 'lucide-react';
+import { Bell, CheckCheck, Inbox, RefreshCw, CheckCircle2, XCircle, ClipboardList, AlertTriangle, Wrench, Trash2, UserPlus } from 'lucide-react';
 import { useNotificaciones } from '../context/NotificacionesContext';
 import { formatDistanceToNow } from '../utils/formatDate';
 import type { Notificacion } from '@shared/types';
 
-const TIPO_ICONS: Record<string, string> = {
-  traslado_solicitado: '🔄', traslado_aceptado: '✅', traslado_rechazado: '❌',
-  verificacion_enviada: '📋', item_danado_reportado: '⚠️', item_en_mantenimiento: '🔧',
-  item_devuelto: '✅', item_baja: '🗑️', cuenta_creada: '👤',
+const TIPO_ICONS: Record<string, React.ReactElement> = {
+  traslado_solicitado: <RefreshCw size={16} className="text-blue-500" />,
+  traslado_aceptado: <CheckCircle2 size={16} className="text-green-500" />,
+  traslado_rechazado: <XCircle size={16} className="text-red-500" />,
+  verificacion_enviada: <ClipboardList size={16} className="text-purple-500" />,
+  item_danado_reportado: <AlertTriangle size={16} className="text-amber-500" />,
+  item_en_mantenimiento: <Wrench size={16} className="text-orange-500" />,
+  item_devuelto: <RefreshCw size={16} className="text-teal-500" />,
+  item_baja: <Trash2 size={16} className="text-gray-500" />,
+  cuenta_creada: <UserPlus size={16} className="text-indigo-500" />,
 };
 
 interface Props {
@@ -83,8 +89,8 @@ export function NotificacionesPanel({ open, onClose }: Props) {
                 }
               </div>
 
-              <span className="text-base flex-shrink-0">
-                {TIPO_ICONS[n.tipo] ?? '🔔'}
+              <span className="flex-shrink-0 flex items-center justify-center w-6 h-6">
+                {TIPO_ICONS[n.tipo] ?? <Bell size={16} className="text-sena-400" />}
               </span>
 
               <div className="flex-1 min-w-0">

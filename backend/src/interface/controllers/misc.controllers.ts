@@ -78,8 +78,8 @@ export const trasladosController = {
 
   async crear(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { itemId, ambienteDestinoId, observaciones } = req.body as {
-        itemId: number; ambienteDestinoId: string; observaciones?: string;
+      const { itemId, ambienteDestinoId, usuarioDestinoId, esDevolucion, observaciones } = req.body as {
+        itemId: number; ambienteDestinoId: string; usuarioDestinoId?: string; esDevolucion?: boolean; observaciones?: string;
       };
       const solicitanteId = req.usuario.id;
 
@@ -100,6 +100,7 @@ export const trasladosController = {
         data: {
           itemId: Number(itemId), solicitanteId,
           ambienteOrigenId: item.ambienteId, ambienteDestinoId,
+          usuarioDestinoId, esDevolucion: esDevolucion ?? false,
           observaciones, esInterNave,
         },
       });
@@ -169,6 +170,7 @@ export const trasladosController = {
             data: {
               ambienteId: solicitud.ambienteDestinoId,
               naveId: solicitud.ambienteDestino.naveId,
+              ambienteOrigenOriginalId: solicitud.esDevolucion ? null : solicitud.ambienteOrigenId,
             },
           });
           await tx.movimiento.create({
@@ -193,7 +195,54 @@ export const trasladosController = {
         urlDestino: `/traslados/${id}`,
       });
 
+      if (accion === 'aceptar') {
+        const coordinadores = await prisma.usuarioNave.findMany({
+          where: { naveId: solicitud.ambienteDestino.naveId },
+          select: { usuarioId: true }
+        });
+        await Promise.all(coordinadores.map(c => crearNotificacion({
+          usuarioId: c.usuarioId,
+          tipo: TipoNotificacion.traslado_aceptado,
+          titulo: 'Nuevo Traslado Completado',
+          mensaje: `Traslado aceptado por ${req.usuario.nombre}, ambiente de origen ${solicitud.ambienteOrigen.nombre}, ambiente destino ${solicitud.ambienteDestino.nombre}.`,
+        })));
+      }
+
       res.json({ ok: true, mensaje: accion === 'aceptar' ? 'Traslado aprobado.' : 'Traslado rechazado.' });
+    } catch (err) { next(err); }
+  },
+
+  async devolver(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const itemId = Number(req.params['id']);
+      const item = await prisma.item.findUnique({ where: { id: itemId, activo: true } });
+      if (!item) throw new NotFoundError('Ítem');
+      if (!item.ambienteOrigenOriginalId) throw new ForbiddenError('Este ítem no tiene un origen registrado para devolver.');
+
+      const ambienteOrigenOriginal = await prisma.ambiente.findUnique({ where: { id: item.ambienteOrigenOriginalId } });
+      if (!ambienteOrigenOriginal) throw new NotFoundError('Ambiente origen');
+
+      await prisma.$transaction(async (tx) => {
+        await tx.item.update({
+          where: { id: itemId },
+          data: {
+            ambienteId: ambienteOrigenOriginal.id,
+            naveId: ambienteOrigenOriginal.naveId,
+            ambienteOrigenOriginalId: null,
+          },
+        });
+        await tx.movimiento.create({
+          data: {
+            itemId,
+            usuarioId: req.usuario.id,
+            tipo: 'devolucion',
+            ambienteOrigenId: item.ambienteId,
+            ambienteDestinoId: ambienteOrigenOriginal.id,
+          },
+        });
+      });
+
+      res.json({ ok: true, mensaje: 'Ítem devuelto instantáneamente al ambiente original.' });
     } catch (err) { next(err); }
   },
 };

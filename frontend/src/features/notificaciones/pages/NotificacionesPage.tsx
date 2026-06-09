@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useNotificaciones } from '@features/notificaciones/context/NotificacionesContext';
 import { PageLoader } from '@shared/components/ui';
-import { Bell, Inbox, ChevronDown, ChevronUp, Package } from 'lucide-react';
+import { Bell, Inbox, ChevronDown, ChevronUp, Package, RefreshCw, CheckCircle2, XCircle, ClipboardList, AlertTriangle, Wrench, Trash2, UserPlus } from 'lucide-react';
 import { formatDistanceToNow } from '../utils/formatDate';
 import type { Notificacion } from '@shared/types';
 import { useNavigate } from 'react-router-dom';
 
-const TIPO_ICONS: Record<string, string> = {
-  traslado_solicitado: '🔄', traslado_aceptado: '✅', traslado_rechazado: '❌',
-  verificacion_enviada: '📋', item_danado_reportado: '⚠️', item_en_mantenimiento: '🔧',
-  item_devuelto: '✅', item_baja: '🗑️', cuenta_creada: '👤',
+const TIPO_ICONS: Record<string, React.ReactElement> = {
+  traslado_solicitado: <RefreshCw size={18} className="text-blue-500" />,
+  traslado_aceptado: <CheckCircle2 size={18} className="text-green-500" />,
+  traslado_rechazado: <XCircle size={18} className="text-red-500" />,
+  verificacion_enviada: <ClipboardList size={18} className="text-purple-500" />,
+  item_danado_reportado: <AlertTriangle size={18} className="text-amber-500" />,
+  item_en_mantenimiento: <Wrench size={18} className="text-orange-500" />,
+  item_devuelto: <RefreshCw size={18} className="text-teal-500" />,
+  item_baja: <Trash2 size={18} className="text-gray-500" />,
+  cuenta_creada: <UserPlus size={18} className="text-indigo-500" />,
 };
 
 export default function NotificacionesPage() {
@@ -71,8 +77,8 @@ export default function NotificacionesPage() {
                     className={`flex items-start gap-4 ${itemsDanados || n.urlDestino ? 'cursor-pointer' : ''}`}
                     onClick={() => handleClick(n)}
                   >
-                    <div className="w-10 h-10 rounded-full bg-sena-50 flex items-center justify-center text-xl flex-shrink-0">
-                      {TIPO_ICONS[n.tipo] ?? '🔔'}
+                    <div className="w-10 h-10 rounded-full bg-sena-50 flex items-center justify-center flex-shrink-0">
+                      {TIPO_ICONS[n.tipo] ?? <Bell size={18} className="text-sena-400" />}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-start justify-between gap-4">

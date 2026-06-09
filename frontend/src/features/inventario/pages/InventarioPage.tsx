@@ -1,11 +1,16 @@
 import { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { Package, Filter, MapPin, Wrench, Trash2 } from 'lucide-react';
 import { useFetch } from '@shared/hooks/useFetch';
 import { SearchInput, EmptyState, PageLoader, Paginacion, SelectSearch } from '@shared/components/ui';
 import type { Item, CategoriaItem, EstadoItem } from '@shared/types';
 import { ESTADO_ITEM_LABELS, ESTADO_ITEM_COLORS } from '@shared/types';
 import { useAuth } from '@features/auth/context/AuthContext';
+import { ItemPreviewModal } from '../components/ItemPreviewModal';
+import { SolicitarTrasladoModal } from '../components/SolicitarTrasladoModal';
+import { SolicitarMantenimientoModal } from '../components/SolicitarMantenimientoModal';
+import { api } from '@lib/api';
+import toast from 'react-hot-toast';
 
 const ESTADOS: { value: EstadoItem | ''; label: string }[] = [
   { value: '', label: 'Todos los estados' },
@@ -17,12 +22,17 @@ const ESTADOS: { value: EstadoItem | ''; label: string }[] = [
 
 export default function InventarioPage() {
   const { user, esServicio } = useAuth();
-  const navigate = useNavigate();
   const [busqueda, setBusqueda] = useState('');
   const [estado, setEstado] = useState<string>(esServicio ? 'danado' : '');
   const [categoriaId, setCategoriaId] = useState('');
   const [pagina, setPagina] = useState(1);
   const [filtrosOpen, setFiltrosOpen] = useState(false);
+
+  // Modales
+  const [itemSeleccionado, setItemSeleccionado] = useState<Item | null>(null);
+  const [modalPreviewOpen, setModalPreviewOpen] = useState(false);
+  const [modalTrasladoOpen, setModalTrasladoOpen] = useState(false);
+  const [modalMantenimientoOpen, setModalMantenimientoOpen] = useState(false);
 
   const { data: catData } = useFetch<{ categorias: CategoriaItem[] }>('/categorias');
   const categorias = catData?.categorias ?? [];
@@ -54,6 +64,62 @@ export default function InventarioPage() {
     encargado: 'Inventario de mi ambiente',
     instructor: 'Inventario del ambiente',
     servicio: 'Ítems dañados',
+  };
+
+  const handleRowClick = (item: Item) => {
+    setItemSeleccionado(item);
+    setModalPreviewOpen(true);
+  };
+
+  const handleSolicitarTraslado = async (ambienteDestinoId: string, usuarioDestinoId: string, observaciones: string) => {
+    if (!itemSeleccionado) return;
+    try {
+      await api.post('/traslados', {
+        itemId: itemSeleccionado.id,
+        ambienteDestinoId,
+        usuarioDestinoId,
+        observaciones,
+      });
+      toast.success('Solicitud de traslado enviada al Encargado.');
+      setModalTrasladoOpen(false);
+      _refetch();
+    } catch (e: any) { toast.error(e?.mensajeUI || 'Error al solicitar traslado'); }
+  };
+
+  const handleSolicitarMantenimiento = async (descripcionFalla: string, observaciones: string) => {
+    if (!itemSeleccionado) return;
+    try {
+      await api.post('/mantenimiento', {
+        itemId: itemSeleccionado.id,
+        descripcionFalla,
+        observaciones,
+      });
+      toast.success('Solicitud de mantenimiento enviada.');
+      setModalMantenimientoOpen(false);
+      _refetch();
+    } catch (e: any) { toast.error(e?.mensajeUI || 'Error al solicitar mantenimiento'); }
+  };
+
+  const handleDevolver = async () => {
+    if (!itemSeleccionado) return;
+    try {
+      if (user?.rol === 'instructor') {
+        // Instructor solicita devolución (un traslado marcado como devolución)
+        if (!itemSeleccionado.ambienteOrigenOriginalId) return;
+        await api.post('/traslados', {
+          itemId: itemSeleccionado.id,
+          ambienteDestinoId: itemSeleccionado.ambienteOrigenOriginalId,
+          esDevolucion: true,
+          observaciones: 'Solicitud de devolución al ambiente original.',
+        });
+        toast.success('Solicitud de devolución enviada al Encargado.');
+      } else {
+        // Encargado devuelve instantáneamente
+        await api.post(`/traslados/devolver/${itemSeleccionado.id}`);
+        toast.success('Ítem devuelto al ambiente original.');
+      }
+      _refetch();
+    } catch (e: any) { toast.error(e?.mensajeUI || 'Error al devolver ítem'); }
   };
 
   return (
@@ -133,7 +199,7 @@ export default function InventarioPage() {
                     <tr
                       key={item.id}
                       className="table-row-hover cursor-pointer"
-                      onClick={() => navigate(`/bodega/${item.id}`)}
+                      onClick={() => handleRowClick(item)}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
@@ -176,6 +242,28 @@ export default function InventarioPage() {
           <Paginacion pagina={pagina} totalPaginas={totalPaginas} onChange={setPagina} />
         </>
       )}
+
+      {/* Modales */}
+      <ItemPreviewModal
+        item={itemSeleccionado}
+        isOpen={modalPreviewOpen}
+        onClose={() => setModalPreviewOpen(false)}
+        onSolicitarTraslado={() => setModalTrasladoOpen(true)}
+        onSolicitarMantenimiento={() => setModalMantenimientoOpen(true)}
+        onDevolver={handleDevolver}
+      />
+      <SolicitarTrasladoModal
+        item={itemSeleccionado}
+        isOpen={modalTrasladoOpen}
+        onClose={() => setModalTrasladoOpen(false)}
+        onSubmit={handleSolicitarTraslado}
+      />
+      <SolicitarMantenimientoModal
+        item={itemSeleccionado}
+        isOpen={modalMantenimientoOpen}
+        onClose={() => setModalMantenimientoOpen(false)}
+        onSubmit={handleSolicitarMantenimiento}
+      />
     </div>
   );
 }
