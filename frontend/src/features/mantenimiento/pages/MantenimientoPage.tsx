@@ -7,8 +7,8 @@ import toast from 'react-hot-toast';
 import type { SolicitudMantenimiento } from '@shared/types';
 import { useAuth } from '@features/auth/context/AuthContext';
 import { formatFecha } from '@features/notificaciones/utils/formatDate';
-import { IniciarMantenimientoModal } from './components/IniciarMantenimientoModal';
-import { Camera, Image as ImageIcon } from 'lucide-react';
+import { IniciarMantenimientoModal } from '../components/IniciarMantenimientoModal';
+import { Image as ImageIcon } from 'lucide-react';
 
 const ESTADO_COLORS = { pendiente: 'badge-yellow', aceptado: 'badge-green', rechazado: 'badge-red' };
 const ESTADO_LABELS = { pendiente: 'Pendiente', aceptado: 'Completado', rechazado: 'Rechazado' };
