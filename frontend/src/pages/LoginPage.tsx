@@ -7,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import { Shield, Eye, EyeOff, Building2, LayoutGrid, Download } from 'lucide-react';
 import { api } from '@lib/api';
 import { useAuth } from '@features/auth/context/AuthContext';
-import toast from 'react-hot-toast';
 import type { UsuarioAuth } from '@shared/types';
 
 type Step = 'credentials' | '2fa';
