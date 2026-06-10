@@ -134,22 +134,22 @@ function templateCodigo2FA(params: {
 
 async function enviar(to: string, subject: string, html: string): Promise<void> {
   if (!gmailClient) {
-    logger.warn(\`Credenciales de Gmail API no configuradas — no se envió correo a \${to}\`);
+    logger.warn(`Credenciales de Gmail API no configuradas — no se envió correo a ${to}`);
     return;
   }
   try {
-    const utf8Subject = \`=?utf-8?B?\${Buffer.from(subject).toString('base64')}?=\`;
-    const fromAddress = \`"Khipu SENA" <\${env.EMAIL_USER}>\`;
+    const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+    const fromAddress = `"Khipu SENA" <${env.EMAIL_USER}>`;
     
     const rawMessage = [
-      \`From: \${fromAddress}\`,
-      \`To: \${to}\`,
-      \`Subject: \${utf8Subject}\`,
+      `From: ${fromAddress}`,
+      `To: ${to}`,
+      `Subject: ${utf8Subject}`,
       'Content-Type: text/html; charset=utf-8',
       'MIME-Version: 1.0',
       '',
       html,
-    ].join('\\r\\n');
+    ].join('\r\n');
 
     const encodedMessage = Buffer.from(rawMessage).toString('base64url');
 
@@ -160,9 +160,9 @@ async function enviar(to: string, subject: string, html: string): Promise<void> 
       },
     });
     
-    logger.info(\`Email enviado a \${to}: \${subject} (ID: \${res.data?.id})\`);
+    logger.info(`Email enviado a ${to}: ${subject} (ID: ${res.data?.id})`);
   } catch (err) {
-    logger.error(\`Error inesperado al enviar email a \${to}:\`, err);
+    logger.error(`Error inesperado al enviar email a ${to}:`, err);
   }
 }
 
