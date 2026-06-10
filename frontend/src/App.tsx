@@ -8,26 +8,46 @@ import { ProtectedRoute } from '@shared/components/common/ProtectedRoute';
 import { RealtimeSync } from '@shared/components/common/RealtimeSync';
 import { PageLoader } from '@shared/components/ui';
 
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-const BodegaPage = lazy(() => import('./features/bodega/pages/BodegaPage'));
-const BodegaItemPage = lazy(() => import('./features/bodega/pages/BodegaItemPage'));
-const InventarioPage = lazy(() => import('./features/inventario/pages/InventarioPage'));
-const TrasladosPage = lazy(() => import('./features/traslados/pages/TrasladosPage'));
-const VerificacionesPage = lazy(() => import('./features/verificaciones/pages/VerificacionesPage'));
-const VerificacionFormPage = lazy(() => import('./features/verificaciones/pages/VerificacionFormPage'));
-const MantenimientoPage = lazy(() => import('./features/mantenimiento/pages/MantenimientoPage'));
-const CategoriasPage = lazy(() => import('./features/categorias/pages/CategoriasPage'));
-const NavesPage = lazy(() => import('./features/naves/pages/NavesPage'));
-const AmbientesPage = lazy(() => import('./features/ambientes/pages/AmbientesPage'));
-const FichasPage = lazy(() => import('./features/fichas/pages/FichasPage'));
-const UsuariosPage = lazy(() => import('./features/usuarios/pages/UsuariosPage'));
-const LogsPage = lazy(() => import('./features/logs/pages/LogsPage'));
-const ConfiguracionPage = lazy(() => import('./features/configuracion/pages/ConfiguracionPage'));
-const MiPerfilPage = lazy(() => import('./features/configuracion/pages/MiPerfilPage'));
-const Setup2FAPage = lazy(() => import('./features/configuracion/pages/Setup2FAPage'));
-const NotificacionesPage = lazy(() => import('./features/notificaciones/pages/NotificacionesPage'));
+// Utilidad para recargar la página automáticamente si falla la carga de un chunk (e.g. por un nuevo despliegue)
+const lazyWithRetry = (componentImport: () => Promise<any>) =>
+  lazy(async () => {
+    const pageHasAlreadyBeenForceRefreshed = JSON.parse(
+      window.sessionStorage.getItem('page-has-been-force-refreshed') || 'false'
+    );
+
+    try {
+      const component = await componentImport();
+      window.sessionStorage.setItem('page-has-been-force-refreshed', 'false');
+      return component;
+    } catch (error) {
+      if (!pageHasAlreadyBeenForceRefreshed) {
+        window.sessionStorage.setItem('page-has-been-force-refreshed', 'true');
+        window.location.reload();
+      }
+      throw error;
+    }
+  });
+
+const LoginPage = lazyWithRetry(() => import('./pages/LoginPage'));
+const NotFoundPage = lazyWithRetry(() => import('./pages/NotFoundPage'));
+const DashboardPage = lazyWithRetry(() => import('./pages/DashboardPage'));
+const BodegaPage = lazyWithRetry(() => import('./features/bodega/pages/BodegaPage'));
+const BodegaItemPage = lazyWithRetry(() => import('./features/bodega/pages/BodegaItemPage'));
+const InventarioPage = lazyWithRetry(() => import('./features/inventario/pages/InventarioPage'));
+const TrasladosPage = lazyWithRetry(() => import('./features/traslados/pages/TrasladosPage'));
+const VerificacionesPage = lazyWithRetry(() => import('./features/verificaciones/pages/VerificacionesPage'));
+const VerificacionFormPage = lazyWithRetry(() => import('./features/verificaciones/pages/VerificacionFormPage'));
+const MantenimientoPage = lazyWithRetry(() => import('./features/mantenimiento/pages/MantenimientoPage'));
+const CategoriasPage = lazyWithRetry(() => import('./features/categorias/pages/CategoriasPage'));
+const NavesPage = lazyWithRetry(() => import('./features/naves/pages/NavesPage'));
+const AmbientesPage = lazyWithRetry(() => import('./features/ambientes/pages/AmbientesPage'));
+const FichasPage = lazyWithRetry(() => import('./features/fichas/pages/FichasPage'));
+const UsuariosPage = lazyWithRetry(() => import('./features/usuarios/pages/UsuariosPage'));
+const LogsPage = lazyWithRetry(() => import('./features/logs/pages/LogsPage'));
+const ConfiguracionPage = lazyWithRetry(() => import('./features/configuracion/pages/ConfiguracionPage'));
+const MiPerfilPage = lazyWithRetry(() => import('./features/configuracion/pages/MiPerfilPage'));
+const Setup2FAPage = lazyWithRetry(() => import('./features/configuracion/pages/Setup2FAPage'));
+const NotificacionesPage = lazyWithRetry(() => import('./features/notificaciones/pages/NotificacionesPage'));
 
 export default function App() {
   return (

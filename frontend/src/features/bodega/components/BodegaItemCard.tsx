@@ -61,7 +61,7 @@ export function BodegaItemCard({ item, onClick }: BodegaItemCardProps) {
 //  ModalCrearItem
 // ============================================================
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '@lib/api';
 import { Modal } from '@shared/components/ui';
 import toast from 'react-hot-toast';
@@ -94,12 +94,14 @@ export function ModalCrearItem({ open, onClose, onCreado, categorias }: ModalCre
   const [imagen, setImagen] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [categoriaEditadaManualmente, setCategoriaEditadaManualmente] = useState(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     if (name === 'numeroInventario' && !/^\d*$/.test(value)) return;
+    if (name === 'categoriaId' && value !== '') setCategoriaEditadaManualmente(true);
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -114,7 +116,59 @@ export function ModalCrearItem({ open, onClose, onCreado, categorias }: ModalCre
     setForm({ numeroInventario: '', nombre: '', descripcion: '', categoriaId: '', observaciones: '' });
     setImagen(null);
     setPreview(null);
+    setCategoriaEditadaManualmente(false);
   };
+
+  // Auto-seleccionar categoría basado en el nombre del ítem
+  useEffect(() => {
+    if (categoriaEditadaManualmente || !form.nombre || categorias.length === 0) return;
+
+    const nombreLower = form.nombre.toLowerCase();
+    
+    // Diccionario de heurísticas de categorías típicas para SENA Centro de Industria y la Construcción
+    const heuristica: Record<string, string[]> = {
+      'tecnología': ['computador', 'portatil', 'portátil', 'mouse', 'teclado', 'monitor', 'pantalla', 'impresora', 'cable', 'cargador', 'telefono', 'teléfono', 'tv', 'televisor', 'proyector', 'tablet', 'ipad', 'camara', 'cámara', 'switch', 'router', 'servidor'],
+      'mobiliario': ['silla', 'mesa', 'escritorio', 'archivador', 'estante', 'estanteria', 'estantería', 'tablero', 'sofa', 'sofá', 'mueble', 'pupitre', 'vitrina', 'locker', 'casillero'],
+      'herramientas': ['martillo', 'destornillador', 'llave', 'taladro', 'pulidora', 'sierra', 'alicate', 'pinza', 'cinta', 'metro', 'soldador', 'calibrador', 'torno', 'fresadora', 'prensa', 'cizalla', 'yunque', 'broca'],
+      'construcción': ['cemento', 'ladrillo', 'varilla', 'arena', 'bloque', 'palustre', 'llana', 'plomada', 'nivel', 'andamio', 'mezcladora', 'carretilla', 'pala', 'pica', 'grada', 'tubo', 'pvc'],
+      'soldadura': ['electrodo', 'careta', 'esmeril', 'soplete', 'argon', 'argón', 'oxigeno', 'oxígeno', 'soldadura', 'inversor'],
+      'mecánica': ['motor', 'bujia', 'bujía', 'llanta', 'aceite', 'filtro', 'gato', 'compresor', 'polea', 'rodamiento', 'embrague', 'freno', 'valvula', 'pistón'],
+      'electricidad': ['multimetro', 'multímetro', 'cable', 'protoboard', 'resistencia', 'condensador', 'osciloscopio', 'cautin', 'cautín', 'estaño', 'breaker', 'transformador', 'rele', 'relé', 'plc', 'contacto', 'bombillo'],
+      'seguridad': ['casco', 'guante', 'bota', 'gafa', 'mascarilla', 'arnes', 'arnés', 'extintor', 'botiquin', 'botiquín', 'tapaoídos', 'overol'],
+      'electrodomésticos': ['nevera', 'microondas', 'cafetera', 'licuadora', 'aire acondicionado', 'ventilador', 'estufa', 'horno'],
+      'papelería': ['resma', 'papel', 'lapiz', 'lápiz', 'esfero', 'bolígrafo', 'marcador', 'borrador', 'cuaderno', 'carpeta', 'ganchos', 'tijeras'],
+      'aseo': ['escoba', 'trapeador', 'jabon', 'jabón', 'cloro', 'desinfectante', 'papel higienico', 'basura', 'caneca', 'trapo', 'limpiador'],
+      'vehículos': ['carro', 'moto', 'motocicleta', 'camioneta', 'bicicleta']
+    };
+
+    let categoriaSugeridaId = '';
+
+    // 1. Buscar si el nombre incluye directamente el nombre de alguna categoría
+    const categoriaDirecta = categorias.find(c => nombreLower.includes(c.nombre.toLowerCase()));
+    
+    if (categoriaDirecta) {
+      categoriaSugeridaId = String(categoriaDirecta.id);
+    } else {
+      // 2. Buscar por palabras clave en el diccionario heurístico
+      for (const [catName, keywords] of Object.entries(heuristica)) {
+        if (keywords.some(kw => new RegExp(`\\b${kw}\\b`, 'i').test(nombreLower) || nombreLower.includes(kw))) {
+          // Si encontramos una palabra clave, buscar la categoría real equivalente
+          const matchCat = categorias.find(c => 
+            c.nombre.toLowerCase().includes(catName.toLowerCase()) || 
+            catName.includes(c.nombre.toLowerCase())
+          );
+          if (matchCat) {
+            categoriaSugeridaId = String(matchCat.id);
+            break;
+          }
+        }
+      }
+    }
+
+    if (categoriaSugeridaId && form.categoriaId !== categoriaSugeridaId) {
+      setForm(prev => ({ ...prev, categoriaId: categoriaSugeridaId }));
+    }
+  }, [form.nombre, categorias, categoriaEditadaManualmente]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
