@@ -125,20 +125,20 @@ export function ModalCrearItem({ open, onClose, onCreado, categorias }: ModalCre
 
     const nombreLower = form.nombre.toLowerCase();
     
-    // Diccionario de heurísticas de categorías típicas para SENA Centro de Industria y la Construcción
+    // Diccionario de heurísticas de categorías típicas para SENA Centro de Industria y la Construcción (Incluyendo colombianismos)
     const heuristica: Record<string, string[]> = {
-      'tecnología': ['computador', 'portatil', 'portátil', 'mouse', 'teclado', 'monitor', 'pantalla', 'impresora', 'cable', 'cargador', 'telefono', 'teléfono', 'tv', 'televisor', 'proyector', 'tablet', 'ipad', 'camara', 'cámara', 'switch', 'router', 'servidor'],
-      'mobiliario': ['silla', 'mesa', 'escritorio', 'archivador', 'estante', 'estanteria', 'estantería', 'tablero', 'sofa', 'sofá', 'mueble', 'pupitre', 'vitrina', 'locker', 'casillero'],
-      'herramientas': ['martillo', 'destornillador', 'llave', 'taladro', 'pulidora', 'sierra', 'alicate', 'pinza', 'cinta', 'metro', 'soldador', 'calibrador', 'torno', 'fresadora', 'prensa', 'cizalla', 'yunque', 'broca'],
-      'construcción': ['cemento', 'ladrillo', 'varilla', 'arena', 'bloque', 'palustre', 'llana', 'plomada', 'nivel', 'andamio', 'mezcladora', 'carretilla', 'pala', 'pica', 'grada', 'tubo', 'pvc'],
-      'soldadura': ['electrodo', 'careta', 'esmeril', 'soplete', 'argon', 'argón', 'oxigeno', 'oxígeno', 'soldadura', 'inversor'],
-      'mecánica': ['motor', 'bujia', 'bujía', 'llanta', 'aceite', 'filtro', 'gato', 'compresor', 'polea', 'rodamiento', 'embrague', 'freno', 'valvula', 'pistón'],
-      'electricidad': ['multimetro', 'multímetro', 'cable', 'protoboard', 'resistencia', 'condensador', 'osciloscopio', 'cautin', 'cautín', 'estaño', 'breaker', 'transformador', 'rele', 'relé', 'plc', 'contacto', 'bombillo'],
-      'seguridad': ['casco', 'guante', 'bota', 'gafa', 'mascarilla', 'arnes', 'arnés', 'extintor', 'botiquin', 'botiquín', 'tapaoídos', 'overol'],
+      'tecnología': ['computador', 'portatil', 'portátil', 'mouse', 'teclado', 'monitor', 'pantalla', 'impresora', 'cable', 'cargador', 'telefono', 'teléfono', 'tv', 'televisor', 'proyector', 'video beam', 'videobeam', 'tablet', 'ipad', 'camara', 'cámara', 'switch', 'router', 'servidor', 'usb', 'memoria', 'diadema', 'audifonos', 'audífonos'],
+      'mobiliario': ['silla', 'mesa', 'escritorio', 'archivador', 'estante', 'estanteria', 'estantería', 'tablero', 'sofa', 'sofá', 'mueble', 'pupitre', 'vitrina', 'locker', 'casillero', 'repisa', 'poltrona'],
+      'herramientas': ['martillo', 'destornillador', 'llave', 'llave expansiva', 'hombre solo', 'taladro', 'pulidora', 'sierra', 'segueta', 'alicate', 'pinza', 'cinta', 'metro', 'flexometro', 'flexómetro', 'soldador', 'calibrador', 'torno', 'fresadora', 'prensa', 'cizalla', 'yunque', 'broca', 'bisturi', 'bisturí', 'maceta', 'porra'],
+      'construcción': ['cemento', 'ladrillo', 'varilla', 'arena', 'bloque', 'palustre', 'llana', 'plomada', 'nivel', 'andamio', 'mezcladora', 'carretilla', 'pala', 'pica', 'grada', 'tubo', 'pvc', 'teja', 'zinc', 'drywall', 'baldoza', 'baldosa'],
+      'soldadura': ['electrodo', 'careta', 'esmeril', 'soplete', 'argon', 'argón', 'oxigeno', 'oxígeno', 'soldadura', 'inversor', 'estaño'],
+      'mecánica': ['motor', 'bujia', 'bujía', 'llanta', 'rin', 'rines', 'aceite', 'filtro', 'gato', 'compresor', 'polea', 'rodamiento', 'embrague', 'freno', 'valvula', 'pistón', 'exosto', 'bomper', 'amortiguador'],
+      'electricidad': ['multimetro', 'multímetro', 'cable', 'protoboard', 'resistencia', 'condensador', 'osciloscopio', 'cautin', 'cautín', 'breaker', 'transformador', 'rele', 'relé', 'plc', 'contacto', 'bombillo', 'roseta', 'toma', 'enchufe'],
+      'seguridad': ['casco', 'guante', 'bota', 'gafa', 'mascarilla', 'arnes', 'arnés', 'extintor', 'botiquin', 'botiquín', 'tapaoídos', 'tapaoidos', 'overol', 'chaleco'],
       'electrodomésticos': ['nevera', 'microondas', 'cafetera', 'licuadora', 'aire acondicionado', 'ventilador', 'estufa', 'horno'],
-      'papelería': ['resma', 'papel', 'lapiz', 'lápiz', 'esfero', 'bolígrafo', 'marcador', 'borrador', 'cuaderno', 'carpeta', 'ganchos', 'tijeras'],
-      'aseo': ['escoba', 'trapeador', 'jabon', 'jabón', 'cloro', 'desinfectante', 'papel higienico', 'basura', 'caneca', 'trapo', 'limpiador'],
-      'vehículos': ['carro', 'moto', 'motocicleta', 'camioneta', 'bicicleta']
+      'papelería': ['resma', 'papel', 'lapiz', 'lápiz', 'esfero', 'boligrafo', 'bolígrafo', 'marcador', 'borrador', 'cuaderno', 'carpeta', 'gancho', 'tijeras', 'colbon', 'colbón', 'pegante', 'cosedora', 'grapadora', 'perforadora', 'chinche', 'clip'],
+      'aseo': ['escoba', 'trapeador', 'trapero', 'churrusco', 'recogedor', 'balde', 'jabon', 'jabón', 'cloro', 'limpido', 'límpido', 'blanqueador', 'desinfectante', 'papel higienico', 'basura', 'caneca', 'trapo', 'limpiador'],
+      'vehículos': ['carro', 'moto', 'motocicleta', 'camioneta', 'bicicleta', 'buseta', 'mula']
     };
 
     let categoriaSugeridaId = '';
