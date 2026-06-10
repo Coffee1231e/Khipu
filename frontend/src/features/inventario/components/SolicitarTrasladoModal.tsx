@@ -18,7 +18,7 @@ export function SolicitarTrasladoModal({ item, isOpen, onClose, onSubmit }: Prop
 
   // Cargar ambientes de la misma nave
   const { data: ambientesData } = useFetch<{ ambientes: Ambiente[] }>(
-    isOpen && item?.naveId ? `/ambientes?naveId=${item.naveId}` : null
+    isOpen && item?.naveId ? `/ambientes?naveId=${item.naveId}&destino=true` : null
   );
   
   // Cargar usuarios del ambiente seleccionado

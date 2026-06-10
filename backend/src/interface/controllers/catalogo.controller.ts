@@ -61,13 +61,16 @@ export const catalogoController = {
   // ─── Ambientes ──────────────────────────────────────────
   async listarAmbientes(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { naveId } = req.query as Record<string, string>;
+      const { naveId, destino } = req.query as Record<string, string>;
       const { rol, ambienteIds, naveIds } = req.usuario;
 
       let where: Record<string, unknown> = { activo: true };
       if (naveId) where['naveId'] = naveId;
-      if (rol === 'coordinador') where['naveId'] = { in: naveIds };
-      if (rol === 'encargado' || rol === 'instructor') where['id'] = { in: ambienteIds };
+      
+      if (destino !== 'true') {
+        if (rol === 'coordinador') where['naveId'] = { in: naveIds };
+        if (rol === 'encargado' || rol === 'instructor') where['id'] = { in: ambienteIds };
+      }
 
       const ambientes = await prisma.ambiente.findMany({
         where,

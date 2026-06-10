@@ -36,8 +36,8 @@ export default function TrasladosPage() {
     `/traslados?${params}`,
   );
 
-  const { data: itemsData } = useFetch<{ items: Item[] }>('/bodega?estado=activo&limite=200');
-  const { data: ambData } = useFetch<{ ambientes: Ambiente[] }>('/ambientes');
+  const { data: itemsData } = useFetch<{ items: Item[] }>('/bodega?limite=200');
+  const { data: ambData } = useFetch<{ ambientes: Ambiente[] }>('/ambientes?destino=true');
 
   const solicitudes = data?.solicitudes ?? [];
   const totalPaginas = data?.paginacion?.paginas ?? 1;
@@ -206,7 +206,9 @@ export default function TrasladosPage() {
           <div>
             <label className="label">Ambiente destino *</label>
             <SelectSearch
-              options={ambientes.map(a => ({ value: a.id, label: a.nombre, sublabel: a.nave?.nombre }))}
+              options={ambientes
+                .filter(a => !user?.ambientes?.some(ua => ua.id === a.id))
+                .map(a => ({ value: a.id, label: a.nombre, sublabel: a.nave?.nombre }))}
               value={formSolicitud.ambienteDestinoId}
               onChange={v => setFormSolicitud(p => ({ ...p, ambienteDestinoId: v }))}
               placeholder="Buscar ambiente destino..."
