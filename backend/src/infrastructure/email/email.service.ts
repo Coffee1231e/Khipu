@@ -7,8 +7,12 @@ import { env } from '../../shared/config/env';
 import { logger } from '../../shared/logger/logger';
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // true para port 465, false para 587
   auth: { user: env.EMAIL_USER, pass: env.EMAIL_PASS },
+  // FORZAR IPv4: Resuelve el error ENETUNREACH de IPv6 en plataformas como Railway
+  family: 4 
 });
 
 // ─── Base del template HTML ───────────────────────────────────

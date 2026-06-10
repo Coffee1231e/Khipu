@@ -87,7 +87,8 @@ export const usuariosController = {
         where: { id: 'singleton' }, create: { id: 'singleton' }, update: {},
       });
 
-      await emailService.enviarBienvenida({ nombre, email, password: passwordGenerada, rol: ROL_LABELS[rol] });
+      // Se ejecuta en segundo plano para no bloquear la respuesta HTTP en caso de que el servidor SMTP tarde o falle
+      void emailService.enviarBienvenida({ nombre, email, password: passwordGenerada, rol: ROL_LABELS[rol] });
 
       await registrarAudit({
         usuarioId: req.usuario.id, rolUsuario: req.usuario.rol,
@@ -161,7 +162,8 @@ export const usuariosController = {
       const hash = await bcrypt.hash(passwordNueva, 12);
       await prisma.usuario.update({ where: { id }, data: { passwordHash: hash } });
 
-      await emailService.enviarCambioPassword({
+      // Se ejecuta en segundo plano para no bloquear la respuesta HTTP en caso de que el servidor SMTP tarde o falle
+      void emailService.enviarCambioPassword({
         nombreUsuario: usuario.nombre,
         email: usuario.email,
         nombreAdmin: req.usuario.nombre,

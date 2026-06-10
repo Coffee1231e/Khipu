@@ -80,8 +80,7 @@ export async function authenticate(
         },
       });
 
-      if (!usuario) throw new UnauthorizedError('Usuario no encontrado.');
-      if (!usuario.activo) throw new AccountDisabledError();
+      if (!usuario || !usuario.activo) throw new UnauthorizedError('Sesión inválida.');
 
       usuarioCached = {
         id: usuario.id,
@@ -97,7 +96,7 @@ export async function authenticate(
       // Guardar en caché por 5 minutos
       cacheService.setUserSession(usuario.id, usuarioCached);
     } else {
-      if (!usuarioCached.activo) throw new AccountDisabledError();
+      if (!usuarioCached.activo) throw new UnauthorizedError('Sesión inválida.');
     }
 
     req.usuario = {

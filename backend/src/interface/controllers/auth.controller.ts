@@ -29,11 +29,12 @@ export const authController = {
         },
       });
 
-      if (!usuario) throw new UnauthorizedError('Credenciales incorrectas.');
-      if (!usuario.activo) throw new AccountDisabledError();
+      if (!usuario || !usuario.activo) {
+        throw new UnauthorizedError('Las credenciales ingresadas son inválidas.');
+      }
 
       const passwordOk = await bcrypt.compare(password, usuario.passwordHash);
-      if (!passwordOk) throw new UnauthorizedError('Credenciales incorrectas.');
+      if (!passwordOk) throw new UnauthorizedError('Las credenciales ingresadas son inválidas.');
 
       if (usuario.dosFA?.activado) {
         if (!codigo2FA) {
@@ -90,7 +91,7 @@ export const authController = {
           ambientes: { select: { ambienteId: true } },
         },
       });
-      if (!usuario) throw new UnauthorizedError('Sesión inválida.');
+      if (!usuario || !usuario.activo) throw new UnauthorizedError('Sesión inválida.');
       
       res.json({ 
         ok: true, 

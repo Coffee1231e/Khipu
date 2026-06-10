@@ -25,6 +25,7 @@ export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<PublicStats>({ naves: 0, ambientes: 0 });
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
     setLoading(true);
     try {
       const { data } = await api.post<{
@@ -78,7 +80,7 @@ export default function LoginPage() {
         navigate('/dashboard', { replace: true });
       }
     } catch (e: unknown) {
-      toast.error((e as { mensajeUI?: string }).mensajeUI ?? 'Error al iniciar sesión');
+      setErrorMsg((e as { mensajeUI?: string }).mensajeUI ?? 'Error al iniciar sesión');
       if (step === '2fa') setCodigo2FA('');
     } finally {
       setLoading(false);
@@ -166,6 +168,13 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
+            {errorMsg && (
+              <div className="bg-red-50 text-red-600 border border-red-200 text-sm px-4 py-3 rounded-xl animate-fade-in flex items-start gap-2">
+                <Shield size={16} className="shrink-0 mt-0.5" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
             {step === 'credentials' ? (
               <>
                 <div>
