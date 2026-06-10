@@ -8,8 +8,8 @@ import { logger } from '../../shared/logger/logger';
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // true para port 465, false para 587
+  port: 587,
+  secure: false, // STARTTLS
   auth: { user: env.EMAIL_USER, pass: env.EMAIL_PASS },
   // FORZAR IPv4: Resuelve el error ENETUNREACH de IPv6 en plataformas como Railway
   family: 4 
