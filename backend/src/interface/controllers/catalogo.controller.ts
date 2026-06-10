@@ -67,7 +67,17 @@ export const catalogoController = {
       let where: Record<string, unknown> = { activo: true };
       if (naveId) where['naveId'] = naveId;
       
-      if (destino !== 'true') {
+      if (destino === 'true') {
+        if (rol === 'encargado' || rol === 'instructor') {
+          // Obtener los IDs de las naves donde tienen ambientes asignados
+          const ambientesUsuario = await prisma.ambiente.findMany({
+            where: { id: { in: ambienteIds } },
+            select: { naveId: true }
+          });
+          const misNaveIds = [...new Set(ambientesUsuario.map(a => a.naveId))];
+          where['naveId'] = { in: misNaveIds };
+        }
+      } else {
         if (rol === 'coordinador') where['naveId'] = { in: naveIds };
         if (rol === 'encargado' || rol === 'instructor') where['id'] = { in: ambienteIds };
       }

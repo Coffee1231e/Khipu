@@ -36,7 +36,7 @@ export default function TrasladosPage() {
     `/traslados?${params}`,
   );
 
-  const { data: itemsData } = useFetch<{ items: Item[] }>('/bodega?limite=200');
+  const { data: itemsData } = useFetch<{ items: Item[] }>('/bodega?estado=activo&limite=200');
   const { data: ambData } = useFetch<{ ambientes: Ambiente[] }>('/ambientes?destino=true');
 
   const solicitudes = data?.solicitudes ?? [];

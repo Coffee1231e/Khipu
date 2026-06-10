@@ -181,5 +181,5 @@ export const filtrosItemsSchema = z.object({
   naveId:     uuid.optional(),
   ambienteId: uuid.optional(),
   pagina:     z.coerce.number().int().positive().default(1),
-  limite:     z.coerce.number().int().min(1).max(100).default(20),
+  limite:     z.coerce.number().int().min(1).max(500).default(20),
 });
