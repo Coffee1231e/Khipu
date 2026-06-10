@@ -26,7 +26,9 @@ const envSchema = z.object({
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
 
   EMAIL_USER: z.string().email().optional(),
-  EMAIL_PASS: z.string().optional(),
+  GMAIL_CLIENT_ID: z.string().optional(),
+  GMAIL_CLIENT_SECRET: z.string().optional(),
+  GMAIL_REFRESH_TOKEN: z.string().optional(),
 
   SENTRY_DSN: z.string().optional(),
   SENTRY_ENABLED: z.string().default('false').transform((v) => v === 'true'),

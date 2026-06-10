@@ -2,18 +2,25 @@
 //  infrastructure/email/email.service.ts
 // ============================================================
 
-import nodemailer from 'nodemailer';
+import { google, gmail_v1 } from 'googleapis';
 import { env } from '../../shared/config/env';
 import { logger } from '../../shared/logger/logger';
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false, // STARTTLS
-  auth: { user: env.EMAIL_USER, pass: env.EMAIL_PASS },
-  // FORZAR IPv4: Resuelve el error ENETUNREACH de IPv6 en plataformas como Railway
-  family: 4 
-} as any);
+let gmailClient: gmail_v1.Gmail | null = null;
+
+if (env.GMAIL_CLIENT_ID && env.GMAIL_CLIENT_SECRET && env.GMAIL_REFRESH_TOKEN) {
+  const oauth2Client = new google.auth.OAuth2(
+    env.GMAIL_CLIENT_ID,
+    env.GMAIL_CLIENT_SECRET,
+    'https://developers.google.com/oauthplayground'
+  );
+
+  oauth2Client.setCredentials({
+    refresh_token: env.GMAIL_REFRESH_TOKEN,
+  });
+
+  gmailClient = google.gmail({ version: 'v1', auth: oauth2Client });
+}
 
 // ─── Base del template HTML ───────────────────────────────────
 function baseTemplate(contenido: string): string {
@@ -126,15 +133,36 @@ function templateCodigo2FA(params: {
 // ─── Funciones públicas ───────────────────────────────────────
 
 async function enviar(to: string, subject: string, html: string): Promise<void> {
-  if (!env.EMAIL_USER || !env.EMAIL_PASS) {
-    logger.warn(`Email no configurado — no se envió correo a ${to}`);
+  if (!gmailClient) {
+    logger.warn(\`Credenciales de Gmail API no configuradas — no se envió correo a \${to}\`);
     return;
   }
   try {
-    await transporter.sendMail({ from: `"Khipu SENA" <${env.EMAIL_USER}>`, to, subject, html });
-    logger.info(`Email enviado a ${to}: ${subject}`);
+    const utf8Subject = \`=?utf-8?B?\${Buffer.from(subject).toString('base64')}?=\`;
+    const fromAddress = \`"Khipu SENA" <\${env.EMAIL_USER}>\`;
+    
+    const rawMessage = [
+      \`From: \${fromAddress}\`,
+      \`To: \${to}\`,
+      \`Subject: \${utf8Subject}\`,
+      'Content-Type: text/html; charset=utf-8',
+      'MIME-Version: 1.0',
+      '',
+      html,
+    ].join('\\r\\n');
+
+    const encodedMessage = Buffer.from(rawMessage).toString('base64url');
+
+    const res = await gmailClient.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedMessage,
+      },
+    });
+    
+    logger.info(\`Email enviado a \${to}: \${subject} (ID: \${res.data?.id})\`);
   } catch (err) {
-    logger.error(`Error al enviar email a ${to}:`, err);
+    logger.error(\`Error inesperado al enviar email a \${to}:\`, err);
   }
 }
 
