@@ -91,7 +91,7 @@ export default function DashboardPage() {
       <DashboardHero nombre={user?.nombre ?? 'Usuario'} heroGradient={heroGradient} />
 
       {/* ─── DASHBOARDS ESPECÍFICOS POR ROL ─── */}
-      {esAdmin ? (
+      {(esAdmin || esAlmacen) ? (
         <div className="space-y-6 animate-slide-up stagger-2">
           {/* PRIMERA FILA DE 4 TARJETAS: ESTADOS DE ITEMS */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -132,44 +132,46 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* SEGUNDA FILA DE 4 TARJETAS: GESTIÓN */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-blue-100 shadow-sm">
-              <div className="bg-blue-50/40 border-b border-blue-100 px-4 py-3 flex justify-center items-center">
-                <p className="text-blue-800 text-xs font-semibold uppercase tracking-wider">Naves</p>
+          {/* SEGUNDA FILA DE 4 TARJETAS: GESTIÓN (Solo Administrador) */}
+          {esAdmin && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-blue-100 shadow-sm">
+                <div className="bg-blue-50/40 border-b border-blue-100 px-4 py-3 flex justify-center items-center">
+                  <p className="text-blue-800 text-xs font-semibold uppercase tracking-wider">Naves</p>
+                </div>
+                <div className="px-4 py-6 flex justify-center items-center bg-white">
+                  <p className="font-display font-bold text-blue-900 text-4xl">{stats.naves}</p>
+                </div>
               </div>
-              <div className="px-4 py-6 flex justify-center items-center bg-white">
-                <p className="font-display font-bold text-blue-900 text-4xl">{stats.naves}</p>
-              </div>
-            </div>
 
-            <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-indigo-100 shadow-sm">
-              <div className="bg-indigo-50/40 border-b border-indigo-100 px-4 py-3 flex justify-center items-center">
-                <p className="text-indigo-800 text-xs font-semibold uppercase tracking-wider">Ambientes</p>
+              <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-indigo-100 shadow-sm">
+                <div className="bg-indigo-50/40 border-b border-indigo-100 px-4 py-3 flex justify-center items-center">
+                  <p className="text-indigo-800 text-xs font-semibold uppercase tracking-wider">Ambientes</p>
+                </div>
+                <div className="px-4 py-6 flex justify-center items-center bg-white">
+                  <p className="font-display font-bold text-indigo-900 text-4xl">{stats.ambientes}</p>
+                </div>
               </div>
-              <div className="px-4 py-6 flex justify-center items-center bg-white">
-                <p className="font-display font-bold text-indigo-900 text-4xl">{stats.ambientes}</p>
-              </div>
-            </div>
 
-            <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-orange-100 shadow-sm cursor-pointer" onClick={() => navigate('/traslados')}>
-              <div className="bg-orange-50/40 border-b border-orange-100 px-4 py-3 flex justify-center items-center">
-                <p className="text-orange-800 text-xs font-semibold uppercase tracking-wider text-center">Traslados Pendientes</p>
+              <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-orange-100 shadow-sm cursor-pointer" onClick={() => navigate('/traslados')}>
+                <div className="bg-orange-50/40 border-b border-orange-100 px-4 py-3 flex justify-center items-center">
+                  <p className="text-orange-800 text-xs font-semibold uppercase tracking-wider text-center">Traslados Pendientes</p>
+                </div>
+                <div className="px-4 py-6 flex justify-center items-center bg-white">
+                  <p className="font-display font-bold text-orange-900 text-4xl">{stats.trasladosPendientes}</p>
+                </div>
               </div>
-              <div className="px-4 py-6 flex justify-center items-center bg-white">
-                <p className="font-display font-bold text-orange-900 text-4xl">{stats.trasladosPendientes}</p>
-              </div>
-            </div>
 
-            <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-rose-100 shadow-sm cursor-pointer" onClick={() => navigate('/mantenimiento')}>
-              <div className="bg-rose-50/40 border-b border-rose-100 px-4 py-3 flex justify-center items-center">
-                <p className="text-rose-800 text-xs font-semibold uppercase tracking-wider text-center">Tickets de Mantenimiento</p>
-              </div>
-              <div className="px-4 py-6 flex justify-center items-center bg-white">
-                <p className="font-display font-bold text-rose-900 text-4xl">{stats.mantenimientosPendientes}</p>
+              <div className="card p-0 hover:-translate-y-1 transition-transform overflow-hidden border border-rose-100 shadow-sm cursor-pointer" onClick={() => navigate('/mantenimiento')}>
+                <div className="bg-rose-50/40 border-b border-rose-100 px-4 py-3 flex justify-center items-center">
+                  <p className="text-rose-800 text-xs font-semibold uppercase tracking-wider text-center">Tickets de Mantenimiento</p>
+                </div>
+                <div className="px-4 py-6 flex justify-center items-center bg-white">
+                  <p className="font-display font-bold text-rose-900 text-4xl">{stats.mantenimientosPendientes}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* GRÁFICOS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -205,10 +207,12 @@ export default function DashboardPage() {
                   </div>
                 )}
                 {/* Score central */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-3xl font-display font-bold text-sena-900">{healthScore}%</span>
-                  <span className="text-[10px] uppercase tracking-wider text-forest-500 font-semibold">Salud</span>
-                </div>
+                {pieData.length > 0 && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span className="text-3xl font-display font-bold text-sena-900">{healthScore}%</span>
+                    <span className="text-[10px] uppercase tracking-wider text-forest-500 font-semibold">Salud</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -245,9 +249,17 @@ export default function DashboardPage() {
 
           {/* REGISTRO DE ACTIVIDAD */}
           <div className="card p-6 border-forest-100 shadow-sm">
-            <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2 border-b border-forest-100 pb-4 mb-4">
-              <Clock size={20} className="text-sena-600" /> Registro de Actividad
-            </h3>
+            <div className="flex items-center justify-between border-b border-forest-100 pb-4 mb-4">
+              <h3 className="font-display font-bold text-sena-900 text-xl flex items-center gap-2">
+                <Clock size={20} className="text-sena-600" /> Registro de Actividad
+              </h3>
+              <button 
+                onClick={() => navigate('/logs')}
+                className="text-sm text-sena-600 hover:text-sena-800 font-medium transition-colors"
+              >
+                Ver registros completos →
+              </button>
+            </div>
             
             {stats.movimientosRecientes.length === 0 ? (
               <div className="py-8 text-center text-forest-400">
@@ -256,7 +268,7 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="divide-y divide-forest-50">
-                {stats.movimientosRecientes.slice(0, 6).map(mov => (
+                {stats.movimientosRecientes.slice(0, 10).map(mov => (
                   <div key={mov.id} className="py-3 px-2 hover:bg-forest-50/50 transition-colors flex gap-4 items-center">
                     <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${
                         mov.tipo === 'entrada' ? 'bg-emerald-500' :

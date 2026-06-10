@@ -161,6 +161,8 @@ export const catalogoController = {
           { ambienteOrigenId: { in: ambienteIds } },
           { ambienteDestinoId: { in: ambienteIds } }
         ];
+      } else if (rol === 'almacen') {
+        movFilter['tipo'] = { not: 'traslado' };
       }
 
       const [naves, ambientes, itemsPorEstado, totalItems, movimientosRecientes, itemsPorCategoriaRaw, categoriasTodas] = await Promise.all([

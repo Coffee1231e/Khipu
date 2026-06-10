@@ -25,7 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/dashboard', icon: <LayoutDashboard size={18} />, label: 'Dashboard', roles: ['administrador', 'almacen', 'coordinador', 'encargado', 'instructor', 'servicio'] },
   { to: '/bodega', icon: <Warehouse size={18} />, label: 'Bodega', roles: ['administrador', 'almacen'] },
   { to: '/inventario', icon: <ClipboardList size={18} />, label: 'Inventario', roles: ['coordinador', 'encargado', 'instructor', 'servicio'] },
-  { to: '/traslados', icon: <ArrowLeftRight size={18} />, label: 'Traslados', roles: ['administrador', 'almacen', 'coordinador', 'encargado', 'instructor'] },
+  { to: '/traslados', icon: <ArrowLeftRight size={18} />, label: 'Traslados', roles: ['administrador', 'coordinador', 'encargado', 'instructor'] },
   { to: '/verificaciones', icon: <ClipboardList size={18} />, label: 'Verificaciones', roles: ['encargado', 'instructor'] },
   { to: '/mantenimiento', icon: <Wrench size={18} />, label: 'Mantenimiento', roles: ['administrador', 'encargado', 'servicio'] },
   { to: '/categorias', icon: <Tags size={18} />, label: 'Categorías', roles: ['administrador', 'almacen'] },
@@ -33,7 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/ambientes', icon: <Building2 size={18} />, label: 'Ambientes', roles: ['administrador'] },
   { to: '/fichas', icon: <BookOpen size={18} />, label: 'Fichas', roles: ['administrador'] },
   { to: '/usuarios', icon: <Users size={18} />, label: 'Usuarios', roles: ['administrador'] },
-  { to: '/logs', icon: <FileText size={18} />, label: 'Registros', roles: ['administrador'] },
+  { to: '/logs', icon: <FileText size={18} />, label: 'Registros', roles: ['administrador', 'almacen'] },
   { to: '/notificaciones', icon: <Bell size={18} />, label: 'Notificaciones', roles: ['administrador', 'almacen', 'coordinador', 'encargado', 'instructor', 'servicio'] },
   // Configuración (límites de cuentas) solo para admin
   { to: '/configuracion', icon: <Settings size={18} />, label: 'Configuración', roles: ['administrador'] },

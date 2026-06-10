@@ -69,13 +69,14 @@ export default function LogsPage() {
     ...(accion && { accion }),
   });
 
-  const { data, loading } = useFetch<{ logs: AuditLog[]; paginacion: { total: number; paginas: number } }>(
+  const { data, loading } = useFetch<{ logs: AuditLog[]; paginacion: { total: number; limite: number; pagina: number } }>(
     `/logs?${params}`,
   );
 
   const logs = data?.logs ?? [];
   const total = data?.paginacion?.total ?? 0;
-  const totalPaginas = data?.paginacion?.paginas ?? 1;
+  const limite = data?.paginacion?.limite ?? 25;
+  const totalPaginas = Math.ceil(total / limite) || 1;
 
   return (
     <div className="space-y-5">

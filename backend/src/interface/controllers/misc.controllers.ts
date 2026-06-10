@@ -672,12 +672,22 @@ export const logsController = {
       } = req.query as Record<string, string>;
       const skip = (Number(pagina) - 1) * Number(limite);
 
+      const rolUsuarioFilter = rolUsuario ? { rolUsuario: rolUsuario as Rol } : {};
+
+      const { rol } = req.usuario;
+      let areaFilter: Record<string, unknown> = {};
+      
+      if (rol === 'almacen') {
+        areaFilter = { area: { in: ['bodega', 'ambiente'] } };
+      } else if (area) {
+        areaFilter = { area };
+      }
+
       const where = {
         ...(entidad && { entidad }),
         ...(accion  && { accion }),
-        ...(area    && { area }),
-        // Express v5 / Prisma: rolUsuario debe ser Rol enum
-        ...(rolUsuario && { rolUsuario: rolUsuario as Rol }),
+        ...areaFilter,
+        ...rolUsuarioFilter,
         ...(desde && { creadoEn: { gte: new Date(desde) } }),
         ...(hasta && { creadoEn: { lte: new Date(hasta) } }),
         ...(q && {
