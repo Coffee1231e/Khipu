@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import type { SolicitudMantenimiento } from '@shared/types';
 import { useAuth } from '@features/auth/context/AuthContext';
 import { formatFecha } from '@features/notificaciones/utils/formatDate';
+import { compressImageToWebP } from '@shared/utils/imageCompressor';
 import { IniciarMantenimientoModal } from '../components/IniciarMantenimientoModal';
 import { Image as ImageIcon } from 'lucide-react';
 
@@ -252,7 +253,20 @@ export default function MantenimientoPage() {
                     <input 
                       type="file" 
                       accept="image/*" 
-                      onChange={e => e.target.files?.[0] && setFotoResolver(e.target.files[0])} 
+                      onChange={async e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          const compressed = await compressImageToWebP(file);
+                          if (compressed.size > 10 * 1024 * 1024) {
+                            toast.error('Este archivo supera el valor máximo permitido (10MB) incluso después de comprimir.');
+                            return;
+                          }
+                          setFotoResolver(compressed);
+                        } catch(err) {
+                          toast.error('Error al procesar la imagen');
+                        }
+                      }} 
                       className="hidden" 
                     />
                   </label>

@@ -12,6 +12,7 @@ import type { Item, Nave, Ambiente, CategoriaItem } from '@shared/types';
 import { ESTADO_ITEM_LABELS, ESTADO_ITEM_COLORS, TIPO_MOVIMIENTO_LABELS } from '@shared/types';
 import { useAuth } from '@features/auth/context/AuthContext';
 import { formatFecha } from '@features/notificaciones/utils/formatDate';
+import { compressImageToWebP } from '@shared/utils/imageCompressor';
 
 export default function BodegaItemPage() {
   const { id } = useParams<{ id: string }>();
@@ -81,13 +82,27 @@ export default function BodegaItemPage() {
   const handleSubirImagen = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const fd = new FormData();
-    fd.append('imagen', file);
+    
+    // Reseteamos el input para que pueda volver a elegir el mismo archivo si hay error
+    e.target.value = '';
+
     try {
+      const compressedFile = await compressImageToWebP(file);
+      
+      if (compressedFile.size > 10 * 1024 * 1024) {
+        toast.error('Este archivo supera el valor máximo permitido (10MB) incluso después de comprimir.');
+        return;
+      }
+
+      const fd = new FormData();
+      fd.append('imagen', compressedFile);
+      
       await api.post(`/bodega/${id}/imagen`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success('Imagen actualizada.');
       refetch();
-    } catch (e: unknown) { toast.error((e as { mensajeUI?: string }).mensajeUI ?? 'Error al subir imagen'); }
+    } catch (e: unknown) { 
+      toast.error((e as { mensajeUI?: string }).mensajeUI ?? (e as Error).message ?? 'Error al subir imagen'); 
+    }
   };
 
   const handleBaja = async () => {

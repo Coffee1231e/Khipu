@@ -75,10 +75,11 @@ export default function App() {
               >
                 <Route path="/dashboard" element={<DashboardPage />} />
 
-                {/* Bodega — admin y almacen */}
+                {/* Bodega y Logs — admin y almacen */}
                 <Route element={<ProtectedRoute roles={['administrador', 'almacen']} />}>
                   <Route path="/bodega" element={<BodegaPage />} />
                   <Route path="/bodega/:id" element={<BodegaItemPage />} />
+                  <Route path="/logs" element={<LogsPage />} />
                 </Route>
 
                 {/* Inventario — todos menos admin/almacen */}
@@ -114,7 +115,6 @@ export default function App() {
                   <Route path="/ambientes" element={<AmbientesPage />} />
                   <Route path="/fichas" element={<FichasPage />} />
                   <Route path="/usuarios" element={<UsuariosPage />} />
-                  <Route path="/logs" element={<LogsPage />} />
                   <Route path="/configuracion" element={<ConfiguracionPage />} />
                 </Route>
 

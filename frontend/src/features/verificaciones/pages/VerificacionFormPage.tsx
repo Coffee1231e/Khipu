@@ -64,10 +64,9 @@ export default function VerificacionFormPage() {
     }
   }, [itemsData]);
 
-  // Auto-set ambiente si usuario tiene uno asignado
   useEffect(() => {
-    if (user?.ambienteIds?.[0] && !ambienteId) {
-      setAmbienteId(user.ambienteIds[0]);
+    if (user?.ambientes?.[0] && !ambienteId) {
+      setAmbienteId(user.ambientes[0].id);
     }
   }, [user]);
 
@@ -244,7 +243,7 @@ export default function VerificacionFormPage() {
         </div>
 
         {/* Ambiente */}
-        {!user?.ambienteIds?.[0] && (
+        {!user?.ambientes?.[0] && (
           <div>
             <label className="label">Ambiente *</label>
             <SelectSearch

@@ -34,7 +34,7 @@ export function ItemPreviewModal({ item, isOpen, onClose, onSolicitarTraslado, o
   const estaPrestado = Boolean(displayItem.ambienteOrigenOriginalId);
   // Un ítem "prestado" a mi ambiente. (This means I am the destination of a previous transfer).
   // Ideally, only the current environment's users can return it.
-  const puedeDevolver = estaPrestado && (esInstructor || esEncargado) && (user?.ambienteIds?.includes(displayItem.ambienteId ?? ''));
+  const puedeDevolver = estaPrestado && (esInstructor || esEncargado) && (user?.ambientes?.some(a => a.id === displayItem.ambienteId));
 
   const solicitudMantenimientoActiva = displayItem.solicitudesMantenimiento?.[0];
 

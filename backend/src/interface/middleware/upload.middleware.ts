@@ -5,7 +5,7 @@
 import multer from 'multer';
 import { AppError } from '../../shared/errors/AppError';
 
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 export const uploadImagen = multer({

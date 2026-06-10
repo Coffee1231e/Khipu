@@ -28,6 +28,11 @@ export default function InventarioPage() {
   const [pagina, setPagina] = useState(1);
   const [filtrosOpen, setFiltrosOpen] = useState(false);
 
+  // Tabs para coordinador
+  const [selectedNaveId, setSelectedNaveId] = useState<string | null>(
+    user?.rol === 'coordinador' && user.naves?.[0] ? user.naves[0].id : null
+  );
+
   // Modales
   const [itemSeleccionado, setItemSeleccionado] = useState<Item | null>(null);
   const [modalPreviewOpen, setModalPreviewOpen] = useState(false);
@@ -42,6 +47,7 @@ export default function InventarioPage() {
     ...(busqueda && { q: busqueda }),
     ...(estado && { estado }),
     ...(categoriaId && { categoriaId }),
+    ...(selectedNaveId && { naveId: selectedNaveId }),
   });
 
   const { data, loading, refetch: _refetch } = useFetch<{
@@ -152,6 +158,25 @@ export default function InventarioPage() {
           {total > 0 ? `${total} ítems` : 'Sin ítems'}
         </p>
       </div>
+
+      {/* ─── NAVE TABS (Coordinador) ─── */}
+      {user?.rol === 'coordinador' && user.naves && user.naves.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-sena-200">
+          {user.naves.map(nave => (
+            <button
+              key={nave.id}
+              onClick={() => { setSelectedNaveId(nave.id); setPagina(1); }}
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+                selectedNaveId === nave.id
+                  ? 'bg-sena-600 text-white shadow-md'
+                  : 'bg-white text-sena-700 border border-sena-100 hover:bg-sena-50'
+              }`}
+            >
+              {nave.nombre}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="card p-4 space-y-3">

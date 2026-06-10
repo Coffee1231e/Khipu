@@ -4,7 +4,7 @@ import { useFetch } from '@shared/hooks/useFetch';
 import { PageLoader } from '@shared/components/ui';
 import { Wrench, ArrowLeftRight, CheckCircle2, Clock, Map, ClipboardList } from 'lucide-react';
 import { TIPO_MOVIMIENTO_LABELS } from '@shared/types';
-import type { Movimiento } from '@shared/types';
+import type { Movimiento, UsuarioAuth } from '@shared/types';
 import { formatDistanceToNow } from '@features/notificaciones/utils/formatDate';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -19,7 +19,7 @@ interface Stats {
   mantenimientosPendientes: number;
 }
 
-function DashboardHero({ nombre, heroGradient }: { nombre: string, heroGradient: string }) {
+function DashboardHero({ user, heroGradient }: { user: UsuarioAuth | null, heroGradient: string }) {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -48,8 +48,38 @@ function DashboardHero({ nombre, heroGradient }: { nombre: string, heroGradient:
         </div>
 
         <h1 className="font-display font-bold text-white text-2xl md:text-3xl mt-3 leading-snug">
-          Bienvenido, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">{nombre?.split(' ')[0]}</span>
+          Bienvenido, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">{user?.nombre?.split(' ')[0] ?? 'Usuario'}</span>
         </h1>
+        
+        {user && ['instructor', 'encargado'].includes(user.rol) && (
+          <div className="mt-3 text-white/90 text-sm bg-black/20 p-3 rounded-lg border border-white/10">
+            {user.ambientes && user.ambientes.length > 0 ? (
+              <>
+                <p className="font-medium text-white">Usted está asignado a {user.ambientes.length === 1 ? 'el ambiente' : 'los ambientes'}:</p>
+                <ul className="list-disc list-inside mt-1 ml-1 text-white/80">
+                  {user.ambientes.map(a => <li key={a.id}>{a.nombre}</li>)}
+                </ul>
+              </>
+            ) : (
+              <p className="text-amber-200 font-medium">Usted no está asignado a ningún ambiente.</p>
+            )}
+          </div>
+        )}
+        
+        {user && user.rol === 'coordinador' && (
+          <div className="mt-3 text-white/90 text-sm bg-black/20 p-3 rounded-lg border border-white/10">
+            {user.naves && user.naves.length > 0 ? (
+              <>
+                <p className="font-medium text-white">Usted está asignado a {user.naves.length === 1 ? 'la nave' : 'las naves'}:</p>
+                <ul className="list-disc list-inside mt-1 ml-1 text-white/80">
+                  {user.naves.map(n => <li key={n.id}>{n.nombre}</li>)}
+                </ul>
+              </>
+            ) : (
+              <p className="text-amber-200 font-medium">Usted no está asignado a ninguna nave.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -62,10 +92,21 @@ function DashboardHero({ nombre, heroGradient }: { nombre: string, heroGradient:
 export default function DashboardPage() {
   const { user, esAdmin, esAlmacen, esCoordinador, esEncargado, esInstructor, esServicio } = useAuth();
   const navigate = useNavigate();
-  const { data, loading } = useFetch<{ ok: boolean; stats: Stats }>('/stats');
+
+  // Para coordinador: selección de nave
+  const [selectedNaveId, setSelectedNaveId] = useState<string | null>(
+    user?.rol === 'coordinador' && user.naves?.[0] ? user.naves[0].id : null
+  );
+
+  const fetchUrl = selectedNaveId 
+    ? `/stats?naveId=${selectedNaveId}` 
+    : '/stats';
+
+  const { data, loading } = useFetch<{ ok: boolean; stats: Stats }>(fetchUrl);
   const stats = data?.stats;
 
-  if (loading || !stats) return <PageLoader />;
+  if (loading && !stats) return <PageLoader />;
+  if (!stats) return <PageLoader />;
 
   // Cálculo del score de salud
   const itemsProblematicos = stats.items.danados + stats.items.enMantenimiento;
@@ -85,13 +126,38 @@ export default function DashboardPage() {
     { name: 'Dañados', value: stats.items.danados, color: '#ef4444' }, // red-500
   ].filter(d => d.value > 0);
 
+  const isUnassigned = 
+    (['instructor', 'encargado'].includes(user?.rol ?? '') && (!user?.ambientes || user.ambientes.length === 0)) ||
+    (user?.rol === 'coordinador' && (!user?.naves || user.naves.length === 0));
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-8">
       {/* ─── HERO SECTION ─── */}
-      <DashboardHero nombre={user?.nombre ?? 'Usuario'} heroGradient={heroGradient} />
+      <DashboardHero user={user} heroGradient={heroGradient} />
+
+      {/* ─── NAVE TABS (Coordinador) ─── */}
+      {user?.rol === 'coordinador' && user.naves && user.naves.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-sena-200">
+          {user.naves.map(nave => (
+            <button
+              key={nave.id}
+              onClick={() => setSelectedNaveId(nave.id)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
+                selectedNaveId === nave.id
+                  ? 'bg-sena-600 text-white shadow-md'
+                  : 'bg-white text-sena-700 border border-sena-100 hover:bg-sena-50'
+              }`}
+            >
+              {nave.nombre}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ─── DASHBOARDS ESPECÍFICOS POR ROL ─── */}
-      {(esAdmin || esAlmacen) ? (
+      {!isUnassigned && (
+        <>
+          {(esAdmin || esAlmacen) ? (
         <div className="space-y-6 animate-slide-up stagger-2">
           {/* PRIMERA FILA DE 4 TARJETAS: ESTADOS DE ITEMS */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -426,7 +492,9 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

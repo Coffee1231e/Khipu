@@ -61,8 +61,8 @@ export interface UsuarioAuth {
   email: string;
   rol: Rol;
   tiene2FAActivo: boolean;
-  naveIds: string[];
-  ambienteIds: string[];
+  naves: { id: string; nombre: string }[];
+  ambientes: { id: string; nombre: string }[];
 }
 
 export interface Nave {

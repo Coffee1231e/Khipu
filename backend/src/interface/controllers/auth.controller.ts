@@ -24,8 +24,8 @@ export const authController = {
         where: { email },
         include: {
           dosFA: true,
-          naves: { select: { naveId: true } },
-          ambientes: { select: { ambienteId: true } },
+          naves: { include: { nave: { select: { id: true, nombre: true } } } },
+          ambientes: { include: { ambiente: { select: { id: true, nombre: true } } } },
         },
       });
 
@@ -71,8 +71,8 @@ export const authController = {
           email: usuario.email,
           rol: usuario.rol,
           tiene2FAActivo: usuario.dosFA?.activado ?? false,
-          naveIds: usuario.naves.map((n) => n.naveId),
-          ambienteIds: usuario.ambientes.map((a) => a.ambienteId),
+          naves: usuario.naves.map((n) => ({ id: n.nave.id, nombre: n.nave.nombre })),
+          ambientes: usuario.ambientes.map((a) => ({ id: a.ambiente.id, nombre: a.ambiente.nombre })),
         },
       });
     } catch (err) {
@@ -87,8 +87,8 @@ export const authController = {
         select: {
           id: true, nombre: true, email: true, rol: true, activo: true,
           dosFA: { select: { activado: true, metodo: true } },
-          naves: { select: { naveId: true } },
-          ambientes: { select: { ambienteId: true } },
+          naves: { include: { nave: { select: { id: true, nombre: true } } } },
+          ambientes: { include: { ambiente: { select: { id: true, nombre: true } } } },
         },
       });
       if (!usuario || !usuario.activo) throw new UnauthorizedError('Sesión inválida.');
@@ -101,8 +101,8 @@ export const authController = {
           email: usuario.email,
           rol: usuario.rol,
           tiene2FAActivo: usuario.dosFA?.activado ?? false,
-          naveIds: usuario.naves.map((n) => n.naveId),
-          ambienteIds: usuario.ambientes.map((a) => a.ambienteId),
+          naves: usuario.naves.map((n) => ({ id: n.nave.id, nombre: n.nave.nombre })),
+          ambientes: usuario.ambientes.map((a) => ({ id: a.ambiente.id, nombre: a.ambiente.nombre })),
         }
       });
     } catch (err) {

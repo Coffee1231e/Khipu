@@ -64,6 +64,7 @@ export function BodegaItemCard({ item, onClick }: BodegaItemCardProps) {
 import { useState, useEffect } from 'react';
 import { api } from '@lib/api';
 import { sugerirCategoria } from '@lib/categoriaHeuristica';
+import { compressImageToWebP } from '@shared/utils/imageCompressor';
 import { Modal } from '@shared/components/ui';
 import toast from 'react-hot-toast';
 import type { CategoriaItem } from '@shared/types';
@@ -106,11 +107,22 @@ export function ModalCrearItem({ open, onClose, onCreado, categorias }: ModalCre
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImagen = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImagen = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setImagen(file);
-    setPreview(URL.createObjectURL(file));
+    e.target.value = '';
+
+    try {
+      const compressedFile = await compressImageToWebP(file);
+      if (compressedFile.size > 10 * 1024 * 1024) {
+        toast.error('Este archivo supera el valor máximo permitido (10MB) incluso después de comprimir.');
+        return;
+      }
+      setImagen(compressedFile);
+      setPreview(URL.createObjectURL(compressedFile));
+    } catch (err: unknown) {
+      toast.error((err as Error).message ?? 'Error al procesar la imagen');
+    }
   };
 
   const resetForm = () => {

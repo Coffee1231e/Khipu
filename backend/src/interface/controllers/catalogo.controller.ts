@@ -145,13 +145,18 @@ export const catalogoController = {
       const naveFilter: Record<string, unknown> = { activo: true };
       const movFilter: Record<string, unknown> = {};
 
+      const queryNaveId = req.query['naveId'] as string | undefined;
+      const filteredNaveIds = rol === 'coordinador' && queryNaveId && naveIds.includes(queryNaveId) 
+        ? [queryNaveId] 
+        : naveIds;
+
       if (rol === 'coordinador') {
-        itemFilter['naveId'] = { in: naveIds };
-        ambienteFilter['naveId'] = { in: naveIds };
-        naveFilter['id'] = { in: naveIds };
+        itemFilter['naveId'] = { in: filteredNaveIds };
+        ambienteFilter['naveId'] = { in: filteredNaveIds };
+        naveFilter['id'] = { in: filteredNaveIds };
         movFilter['OR'] = [
-          { ambienteOrigen: { naveId: { in: naveIds } } },
-          { ambienteDestino: { naveId: { in: naveIds } } }
+          { ambienteOrigen: { naveId: { in: filteredNaveIds } } },
+          { ambienteDestino: { naveId: { in: filteredNaveIds } } }
         ];
       } else if (rol === 'encargado' || rol === 'instructor') {
         itemFilter['ambienteId'] = { in: ambienteIds };
@@ -194,8 +199,8 @@ export const catalogoController = {
         const trFilter: Record<string, unknown> = { estado: 'pendiente' };
         if (rol === 'coordinador') {
            trFilter['OR'] = [
-             { ambienteOrigen: { naveId: { in: naveIds } } },
-             { ambienteDestino: { naveId: { in: naveIds } } }
+             { ambienteOrigen: { naveId: { in: filteredNaveIds } } },
+             { ambienteDestino: { naveId: { in: filteredNaveIds } } }
            ];
         }
         trasladosPendientes = await prisma.solicitudTraslado.count({ where: trFilter });
