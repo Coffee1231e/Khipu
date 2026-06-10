@@ -21,40 +21,59 @@ import { TipoNotificacion } from '@prisma/client';
 export const trasladosController = {
   async listar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const { estado, pagina = '1', limite = '20' } = req.query as Record<string, string>;
-      // usuarioId no se usa en traslados listar — solo rol/ambienteIds/naveIds
+      const { estado, naveId, pagina = '1', limite = '20' } = req.query as Record<string, string>;
       const { rol, ambienteIds, naveIds } = req.usuario;
       const skip = (Number(pagina) - 1) * Number(limite);
 
-      let whereExtra: Record<string, unknown> = {};
+      const andConditions: any[] = [];
+
+      if (estado) andConditions.push({ estado: estado as 'pendiente' | 'aceptado' | 'rechazado' });
 
       if (rol === 'encargado' || rol === 'instructor') {
-        whereExtra = {
+        andConditions.push({
           OR: [
             { ambienteOrigenId: { in: ambienteIds } },
             { ambienteDestinoId: { in: ambienteIds } },
           ],
-        };
+        });
+        if (naveId) {
+          andConditions.push({
+            OR: [{ ambienteOrigen: { naveId } }, { ambienteDestino: { naveId } }]
+          });
+        }
       } else if (rol === 'coordinador') {
+        const navesABuscar = naveId
+          ? (naveIds.includes(naveId) ? [naveId] : ['forbidden'])
+          : naveIds;
+
         const ambientesDeLasNaves = await prisma.ambiente.findMany({
-          where: { naveId: { in: naveIds } },
+          where: { naveId: { in: navesABuscar } },
           select: { id: true },
         });
         const ids = ambientesDeLasNaves.map((a) => a.id);
-        whereExtra = {
+        andConditions.push({
           OR: [
             { ambienteOrigenId: { in: ids } },
             { ambienteDestinoId: { in: ids } },
           ],
-        };
+        });
       } else if (rol === 'almacen') {
-        whereExtra = { esInterNave: false };
+        andConditions.push({ esInterNave: false });
+        if (naveId) {
+          andConditions.push({
+            OR: [{ ambienteOrigen: { naveId } }, { ambienteDestino: { naveId } }]
+          });
+        }
+      } else {
+        // Administrador
+        if (naveId) {
+          andConditions.push({
+            OR: [{ ambienteOrigen: { naveId } }, { ambienteDestino: { naveId } }]
+          });
+        }
       }
 
-      const where = {
-        ...(estado && { estado: estado as 'pendiente' | 'aceptado' | 'rechazado' }),
-        ...whereExtra,
-      };
+      const where = andConditions.length > 0 ? { AND: andConditions } : {};
 
       const [solicitudes, total] = await Promise.all([
         prisma.solicitudTraslado.findMany({
