@@ -104,7 +104,7 @@ router.get('/fichas',        authenticate, catalogoController.listarFichas);
 router.post('/fichas',       authenticate, requireRoles('administrador'),            validate(crearFichaSchema), catalogoController.crearFicha);
 
 // ─── Traslados ────────────────────────────────────────────────
-router.get('/traslados',             authenticate, authorize(ACCIONES.TRASLADO_VER_TODO),       trasladosController.listar);
+router.get('/traslados',             authenticate, requireRoles('administrador', 'almacen', 'coordinador', 'encargado'), trasladosController.listar);
 router.post('/traslados',            authenticate, authorize(ACCIONES.TRASLADO_SOLICITAR), validate(crearSolicitudTrasladoSchema), trasladosController.crear);
 router.patch('/traslados/:id/resolver', authenticate, validate(resolverSolicitudTrasladoSchema), trasladosController.resolver);
 router.post('/traslados/devolver/:id', authenticate, authorize(ACCIONES.TRASLADO_SOLICITAR), trasladosController.devolver);

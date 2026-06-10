@@ -87,9 +87,10 @@ export default function App() {
                   <Route path="/inventario" element={<InventarioPage />} />
                 </Route>
 
-                {/* Traslados — todos menos servicio */}
-                <Route element={<ProtectedRoute roles={['administrador', 'almacen', 'coordinador', 'encargado', 'instructor']} />}>
+                {/* Traslados — administrador, almacen, coordinador, encargado */}
+                <Route element={<ProtectedRoute roles={['administrador', 'almacen', 'coordinador', 'encargado']} />}>
                   <Route path="/traslados" element={<TrasladosPage />} />
+                  <Route path="/traslados/:id" element={<TrasladosPage />} />
                 </Route>
 
                 {/* Verificaciones — encargado e instructor */}
