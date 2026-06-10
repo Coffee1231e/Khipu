@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../../infrastructure/database/prisma.client';
 import { signToken } from '../../infrastructure/auth/jwt';
 import { verificar2FA } from '../../infrastructure/twofa/twofa.service';
-import { UnauthorizedError, AccountDisabledError } from '../../shared/errors/AppError';
+import { UnauthorizedError } from '../../shared/errors/AppError';
 import { isProd } from '../../shared/config/env';
 import { cacheService } from '../../infrastructure/cache/cache.service';
 
@@ -85,7 +85,7 @@ export const authController = {
       const usuario = await prisma.usuario.findUnique({
         where: { id: req.usuario.id },
         select: {
-          id: true, nombre: true, email: true, rol: true,
+          id: true, nombre: true, email: true, rol: true, activo: true,
           dosFA: { select: { activado: true, metodo: true } },
           naves: { select: { naveId: true } },
           ambientes: { select: { ambienteId: true } },

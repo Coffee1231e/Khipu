@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
   auth: { user: env.EMAIL_USER, pass: env.EMAIL_PASS },
   // FORZAR IPv4: Resuelve el error ENETUNREACH de IPv6 en plataformas como Railway
   family: 4 
-});
+} as any);
 
 // ─── Base del template HTML ───────────────────────────────────
 function baseTemplate(contenido: string): string {

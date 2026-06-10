@@ -8,7 +8,6 @@ import { prisma } from '../../infrastructure/database/prisma.client';
 import {
   UnauthorizedError,
   ForbiddenError,
-  AccountDisabledError,
   Requires2FAError,
 } from '../../shared/errors/AppError';
 import {
