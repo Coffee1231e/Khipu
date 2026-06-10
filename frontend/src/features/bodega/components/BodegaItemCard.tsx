@@ -63,6 +63,7 @@ export function BodegaItemCard({ item, onClick }: BodegaItemCardProps) {
 
 import { useState, useEffect } from 'react';
 import { api } from '@lib/api';
+import { sugerirCategoria } from '@lib/categoriaHeuristica';
 import { Modal } from '@shared/components/ui';
 import toast from 'react-hot-toast';
 import type { CategoriaItem } from '@shared/types';
@@ -123,47 +124,7 @@ export function ModalCrearItem({ open, onClose, onCreado, categorias }: ModalCre
   useEffect(() => {
     if (categoriaEditadaManualmente || !form.nombre || categorias.length === 0) return;
 
-    const nombreLower = form.nombre.toLowerCase();
-    
-    // Diccionario de heurísticas de categorías típicas para SENA Centro de Industria y la Construcción (Incluyendo colombianismos)
-    const heuristica: Record<string, string[]> = {
-      'tecnología': ['computador', 'portatil', 'portátil', 'mouse', 'teclado', 'monitor', 'pantalla', 'impresora', 'cable', 'cargador', 'telefono', 'teléfono', 'tv', 'televisor', 'proyector', 'video beam', 'videobeam', 'tablet', 'ipad', 'camara', 'cámara', 'switch', 'router', 'servidor', 'usb', 'memoria', 'diadema', 'audifonos', 'audífonos'],
-      'mobiliario': ['silla', 'mesa', 'escritorio', 'archivador', 'estante', 'estanteria', 'estantería', 'tablero', 'sofa', 'sofá', 'mueble', 'pupitre', 'vitrina', 'locker', 'casillero', 'repisa', 'poltrona'],
-      'herramientas': ['martillo', 'destornillador', 'llave', 'llave expansiva', 'hombre solo', 'taladro', 'pulidora', 'sierra', 'segueta', 'alicate', 'pinza', 'cinta', 'metro', 'flexometro', 'flexómetro', 'soldador', 'calibrador', 'torno', 'fresadora', 'prensa', 'cizalla', 'yunque', 'broca', 'bisturi', 'bisturí', 'maceta', 'porra'],
-      'construcción': ['cemento', 'ladrillo', 'varilla', 'arena', 'bloque', 'palustre', 'llana', 'plomada', 'nivel', 'andamio', 'mezcladora', 'carretilla', 'pala', 'pica', 'grada', 'tubo', 'pvc', 'teja', 'zinc', 'drywall', 'baldoza', 'baldosa'],
-      'soldadura': ['electrodo', 'careta', 'esmeril', 'soplete', 'argon', 'argón', 'oxigeno', 'oxígeno', 'soldadura', 'inversor', 'estaño'],
-      'mecánica': ['motor', 'bujia', 'bujía', 'llanta', 'rin', 'rines', 'aceite', 'filtro', 'gato', 'compresor', 'polea', 'rodamiento', 'embrague', 'freno', 'valvula', 'pistón', 'exosto', 'bomper', 'amortiguador'],
-      'electricidad': ['multimetro', 'multímetro', 'cable', 'protoboard', 'resistencia', 'condensador', 'osciloscopio', 'cautin', 'cautín', 'breaker', 'transformador', 'rele', 'relé', 'plc', 'contacto', 'bombillo', 'roseta', 'toma', 'enchufe'],
-      'seguridad': ['casco', 'guante', 'bota', 'gafa', 'mascarilla', 'arnes', 'arnés', 'extintor', 'botiquin', 'botiquín', 'tapaoídos', 'tapaoidos', 'overol', 'chaleco'],
-      'electrodomésticos': ['nevera', 'microondas', 'cafetera', 'licuadora', 'aire acondicionado', 'ventilador', 'estufa', 'horno'],
-      'papelería': ['resma', 'papel', 'lapiz', 'lápiz', 'esfero', 'boligrafo', 'bolígrafo', 'marcador', 'borrador', 'cuaderno', 'carpeta', 'gancho', 'tijeras', 'colbon', 'colbón', 'pegante', 'cosedora', 'grapadora', 'perforadora', 'chinche', 'clip'],
-      'aseo': ['escoba', 'trapeador', 'trapero', 'churrusco', 'recogedor', 'balde', 'jabon', 'jabón', 'cloro', 'limpido', 'límpido', 'blanqueador', 'desinfectante', 'papel higienico', 'basura', 'caneca', 'trapo', 'limpiador'],
-      'vehículos': ['carro', 'moto', 'motocicleta', 'camioneta', 'bicicleta', 'buseta', 'mula']
-    };
-
-    let categoriaSugeridaId = '';
-
-    // 1. Buscar si el nombre incluye directamente el nombre de alguna categoría
-    const categoriaDirecta = categorias.find(c => nombreLower.includes(c.nombre.toLowerCase()));
-    
-    if (categoriaDirecta) {
-      categoriaSugeridaId = String(categoriaDirecta.id);
-    } else {
-      // 2. Buscar por palabras clave en el diccionario heurístico
-      for (const [catName, keywords] of Object.entries(heuristica)) {
-        if (keywords.some(kw => new RegExp(`\\b${kw}\\b`, 'i').test(nombreLower) || nombreLower.includes(kw))) {
-          // Si encontramos una palabra clave, buscar la categoría real equivalente
-          const matchCat = categorias.find(c => 
-            c.nombre.toLowerCase().includes(catName.toLowerCase()) || 
-            catName.includes(c.nombre.toLowerCase())
-          );
-          if (matchCat) {
-            categoriaSugeridaId = String(matchCat.id);
-            break;
-          }
-        }
-      }
-    }
+    const categoriaSugeridaId = sugerirCategoria(form.nombre, categorias);
 
     if (categoriaSugeridaId && form.categoriaId !== categoriaSugeridaId) {
       setForm(prev => ({ ...prev, categoriaId: categoriaSugeridaId }));
